@@ -11,6 +11,7 @@ from .views import (
     delete_student,
     bulk_qr_download,
     bulk_id_cards,
+    download_student_template,
 )
 
 urlpatterns = [
@@ -60,5 +61,10 @@ path(
     "bulk-id-cards/",
     bulk_id_cards,
     name="bulk_id_cards"
+),
+path(
+    "template/",
+    download_student_template,
+    name="student_template"
 ),
 ]

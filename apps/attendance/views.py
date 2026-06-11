@@ -27,6 +27,10 @@ from reportlab.platypus import (
 
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
+from apps.notifications.attendance_notifications import (
+    notify_check_in,
+    notify_check_out
+)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -65,6 +69,8 @@ class QRScanView(View):
 
                 attendance.save()
 
+                notify_check_in(student)
+
                 return JsonResponse({
                     "status": "CHECK_IN",
                     "student": student.student_id,
@@ -76,6 +82,8 @@ class QRScanView(View):
                 attendance.check_out = now
 
                 attendance.save()
+
+                notify_check_out(student)
 
                 return JsonResponse({
                     "status": "CHECK_OUT",

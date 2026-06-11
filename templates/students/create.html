@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-Add Student
+Create Student
 {% endblock %}
 
 {% block content %}
@@ -10,9 +10,9 @@ Add Student
 
     <div class="bg-white rounded-xl shadow p-6">
 
-        <h1 class="text-3xl font-bold mb-6">
+        <h1 class="text-2xl font-bold mb-6">
 
-            Add Student
+            Create Student
 
         </h1>
 
@@ -23,15 +23,11 @@ Add Student
 
             {% csrf_token %}
 
-            <div class="space-y-4">
-
-                {{ form.as_p }}
-
-            </div>
+            {{ form.as_p }}
 
             <button
                 type="submit"
-                class="bg-blue-600 text-white px-5 py-3 rounded-lg mt-4"
+                class="bg-blue-600 text-white px-5 py-3 rounded-lg"
             >
 
                 Save Student

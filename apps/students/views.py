@@ -3,9 +3,12 @@ from django.shortcuts import (
     get_object_or_404
 )
 from django.utils import timezone
+from django.http import FileResponse
+from django.conf import settings
+import os
 
 from apps.attendance.models import Attendance
-from .models import Student
+from .models import Student, Parent, StudentParent
 from io import BytesIO
 
 from django.http import FileResponse
@@ -205,15 +208,35 @@ def import_students(request):
 
                 first_name = row[0]
                 last_name = row[1]
+                date_of_birth = row[2]
+                gender = row[3]
+                class_name = row[4]
+
+                parent_name = row[5]
+                parent_email = row[6]
+                parent_phone = row[7]
+                parent_whatsapp = row[8]
+
+                relationship = (
+                    row[9]
+                    if len(row) > 9 and row[9]
+                    else "Guardian"
+                )
 
                 if not first_name:
                     continue
 
-                student = Student(
+                student = Student.objects.create(
 
                     first_name=first_name,
 
-                    last_name=last_name,
+                    last_name=last_name or "",
+
+                    date_of_birth=date_of_birth,
+
+                    gender=gender or "",
+
+                    class_name=class_name or "",
 
                     portal_token=secrets.token_urlsafe(
                         16
@@ -221,27 +244,68 @@ def import_students(request):
 
                 )
 
-                student.save()
+                if parent_name:
+
+                    parent, created = Parent.objects.get_or_create(
+
+                        full_name=parent_name,
+
+                        defaults={
+
+                            "email": parent_email,
+
+                            "phone_number": parent_phone or "",
+
+                            "whatsapp_number": parent_whatsapp or ""
+
+                        }
+
+                    )
+
+                    StudentParent.objects.get_or_create(
+
+                        student=student,
+
+                        parent=parent,
+
+                        defaults={
+
+                            "relationship": relationship
+
+                        }
+
+                    )
 
                 count += 1
 
             messages.success(
+
                 request,
+
                 f"{count} students imported successfully."
+
             )
 
             return redirect(
+
                 "student_list"
+
             )
 
     context = {
+
         "form": form
+
     }
 
     return render(
+
         request,
+
         "students/import.html",
+
         context
+
     )
     
 
@@ -306,7 +370,63 @@ def create_student(request):
 
         if form.is_valid():
 
-            student = form.save()
+            parent_name = form.cleaned_data.get(
+                "parent_name"
+            )
+
+            parent_email = form.cleaned_data.get(
+                "parent_email"
+            )
+
+            parent_phone = form.cleaned_data.get(
+                "parent_phone"
+            )
+
+            parent_whatsapp = form.cleaned_data.get(
+                "parent_whatsapp"
+            )
+
+            relationship = form.cleaned_data.get(
+                "relationship"
+            )
+
+            student = form.save(
+                commit=False
+            )
+
+            student.save()
+
+            if parent_name:
+
+                parent, created = Parent.objects.get_or_create(
+
+                    full_name=parent_name,
+
+                    defaults={
+
+                        "email": parent_email,
+
+                        "phone_number": parent_phone,
+
+                        "whatsapp_number": parent_whatsapp,
+
+                    }
+
+                )
+
+                StudentParent.objects.get_or_create(
+
+                    student=student,
+
+                    parent=parent,
+
+                    defaults={
+
+                        "relationship": relationship
+
+                    }
+
+                )
 
             messages.success(
 
@@ -340,6 +460,7 @@ def create_student(request):
 
     )
     
+
 def edit_student(request, pk):
 
     student = get_object_or_404(
@@ -556,4 +677,28 @@ def bulk_id_cards(request):
         buffer,
         as_attachment=True,
         filename="student_id_cards.pdf"
+    )
+    
+def download_student_template(request):
+
+    file_path = os.path.join(
+
+        settings.BASE_DIR,
+
+        "static",
+
+        "templates",
+
+        "student_import_template.xlsx"
+
+    )
+
+    return FileResponse(
+
+        open(file_path, "rb"),
+
+        as_attachment=True,
+
+        filename="student_import_template.xlsx"
+
     )

@@ -167,15 +167,27 @@ class StudentParent(models.Model):
 
     student = models.ForeignKey(
         Student,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name="parents"
     )
 
     parent = models.ForeignKey(
         Parent,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name="students"
     )
 
     relationship = models.CharField(
         max_length=50,
-        default='Guardian'
+        default="Guardian"
     )
+
+    def __str__(self):
+
+        return (
+
+            f"{self.student} - "
+
+            f"{self.parent}"
+
+        )
