@@ -4,6 +4,10 @@ from apps.students.models import StudentParent
 
 from .services import create_notification
 
+from .whatsapp_service import (
+    build_whatsapp_url
+)
+
 
 def notify_check_in(student, timestamp):
 

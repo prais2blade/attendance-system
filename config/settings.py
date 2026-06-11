@@ -16,6 +16,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+AUTO_WHATSAPP_POPUP = False
+
 
 # Application definition
 
