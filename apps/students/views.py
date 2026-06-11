@@ -375,6 +375,9 @@ def create_student(request):
         )
 
         if form.is_valid():
+            parent_title = form.cleaned_data.get(
+                "parent_title"
+            )
 
             parent_name = form.cleaned_data.get(
                 "parent_name"
@@ -409,6 +412,7 @@ def create_student(request):
                     full_name=parent_name,
 
                     defaults={
+                        "title": parent_title,
 
                         "email": parent_email,
 
@@ -725,6 +729,7 @@ def download_student_template(request):
         "date_of_birth",
         "gender",
         "class_name",
+        "parent_title",
         "parent_name",
         "parent_email",
         "parent_phone",
@@ -777,6 +782,7 @@ def download_student_template(request):
         "2015-04-20",
         "Male",
         "JSS1",
+        "Mrs",
         "Jane Doe",
         "jane@example.com",
         "08012345678",

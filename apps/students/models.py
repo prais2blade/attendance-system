@@ -143,6 +143,34 @@ class Student(models.Model):
 
 class Parent(models.Model):
 
+    TITLE_CHOICES = (
+
+        ("Mr", "Mr"),
+
+        ("Mrs", "Mrs"),
+
+        ("Miss", "Miss"),
+
+        ("Dr", "Dr"),
+
+        ("Pastor", "Pastor"),
+
+        ("Chief", "Chief"),
+
+        ("Alhaji", "Alhaji"),
+
+    )
+
+    title = models.CharField(
+
+        max_length=20,
+
+        choices=TITLE_CHOICES,
+
+        blank=True
+
+    )
+
     full_name = models.CharField(
         max_length=200
     )
@@ -161,7 +189,13 @@ class Parent(models.Model):
     )
 
     def __str__(self):
+
+        if self.title:
+
+            return f"{self.title} {self.full_name}"
+
         return self.full_name
+    
     
 class StudentParent(models.Model):
 

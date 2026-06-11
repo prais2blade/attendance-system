@@ -14,6 +14,32 @@ class StudentImportForm(forms.Form):
 
 
 class StudentForm(forms.ModelForm):
+    
+    parent_title = forms.ChoiceField(
+
+        required=False,
+
+        choices=[
+
+            ("", "---------"),
+
+            ("Mr", "Mr"),
+
+            ("Mrs", "Mrs"),
+
+            ("Miss", "Miss"),
+
+            ("Dr", "Dr"),
+
+            ("Pastor", "Pastor"),
+
+            ("Chief", "Chief"),
+
+            ("Alhaji", "Alhaji"),
+
+        ]
+
+    )
 
     parent_name = forms.CharField(
         required=False,

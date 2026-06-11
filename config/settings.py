@@ -69,6 +69,22 @@ TEMPLATES = [
     },
 ]
 
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+EMAIL_HOST = "smtp.gmail.com"
+
+EMAIL_PORT = 587
+
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = "seravisitorapp@gmail.com"
+
+EMAIL_HOST_PASSWORD = "lstj fvwc wsyq hiki"
+
+DEFAULT_FROM_EMAIL = "CodeCamp Innovation Hub <seravisitorapp@gmail.com>"
+
+
 WSGI_APPLICATION = 'config.wsgi.application'
 
 

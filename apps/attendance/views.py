@@ -69,7 +69,8 @@ class QRScanView(View):
 
                 attendance.save()
 
-                notify_check_in(student)
+                notify_check_in(student, now)
+
 
                 return JsonResponse({
                     "status": "CHECK_IN",
@@ -83,7 +84,7 @@ class QRScanView(View):
 
                 attendance.save()
 
-                notify_check_out(student)
+                notify_check_out(student, now)
 
                 return JsonResponse({
                     "status": "CHECK_OUT",
