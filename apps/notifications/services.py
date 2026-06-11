@@ -77,3 +77,24 @@ def send_notification_email(notification):
         )
 
         return False
+    
+    
+def send_whatsapp_message(
+
+    phone_number,
+
+    message
+
+):
+
+    print(
+
+        f"WhatsApp => "
+
+        f"{phone_number}"
+
+    )
+
+    print(message)
+
+    return True

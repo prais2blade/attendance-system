@@ -49,7 +49,7 @@ Thank you.
 CodeCamp Innovation Hub
 """
 
-        if parent.email:
+        if parent.email and parent.receive_email:
 
             create_notification(
 
@@ -58,6 +58,29 @@ CodeCamp Innovation Hub
                 channel="email",
 
                 subject="Student Check-In",
+
+                message=message
+
+            )
+        if (
+
+            parent.whatsapp_number
+
+            and
+
+            parent.receive_whatsapp
+
+        ):
+
+            create_notification(
+
+                recipient=
+
+                    parent.whatsapp_number,
+
+                channel="whatsapp",
+
+                subject="",
 
                 message=message
 
@@ -108,7 +131,7 @@ Thank you.
 CodeCamp Innovation Hub
 """
 
-        if parent.email:
+        if parent.email and parent.receive_email:
 
             create_notification(
 
@@ -117,6 +140,30 @@ CodeCamp Innovation Hub
                 channel="email",
 
                 subject="Student Check-Out",
+
+                message=message
+
+            )
+            
+        if (
+
+            parent.whatsapp_number
+
+            and
+
+            parent.receive_whatsapp
+
+        ):
+
+            create_notification(
+
+                recipient=
+
+                    parent.whatsapp_number,
+
+                channel="whatsapp",
+
+                subject="",
 
                 message=message
 

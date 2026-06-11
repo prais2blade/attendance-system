@@ -1,22 +1,43 @@
 from .models import Notification
 
-from .services import (
-    send_notification_email
-)
+from .services import send_notification_email, send_whatsapp_message
+
 
 
 def process_pending_notifications():
 
     notifications = Notification.objects.filter(
 
-        status="pending",
-
-        channel="email"
+        status="pending"
 
     )
 
     for notification in notifications:
 
-        send_notification_email(
-            notification
-        )
+        if notification.channel == "email":
+
+            send_notification_email(
+                notification
+            )
+
+        elif notification.channel == "whatsapp":
+
+            success = send_whatsapp_message(
+
+                notification.recipient,
+
+                notification.message
+
+            )
+
+            if success:
+
+                notification.status = "sent"
+
+                notification.save(
+
+                    update_fields=[
+                        "status"
+                    ]
+
+                )

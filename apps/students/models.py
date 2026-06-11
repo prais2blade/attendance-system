@@ -187,6 +187,14 @@ class Parent(models.Model):
         blank=True,
         null=True
     )
+    
+    receive_email = models.BooleanField(
+        default=True
+    )
+
+    receive_whatsapp = models.BooleanField(
+        default=True
+    )
 
     def __str__(self):
 
