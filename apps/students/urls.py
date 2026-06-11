@@ -67,4 +67,9 @@ path(
     download_student_template,
     name="student_template"
 ),
+path(
+    "template/",
+    download_student_template,
+    name="student_template"
+),
 ]

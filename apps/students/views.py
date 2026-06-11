@@ -34,7 +34,13 @@ import zipfile
 from io import BytesIO
 
 from django.http import HttpResponse
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
+from openpyxl.utils import get_column_letter
 
+
+
+# Functions for operations on students
 
 def student_detail(request, pk):
 
@@ -702,3 +708,195 @@ def download_student_template(request):
         filename="student_import_template.xlsx"
 
     )
+
+
+def download_student_template(request):
+
+    workbook = Workbook()
+
+    sheet = workbook.active
+
+    sheet.title = "Students"
+
+    headers = [
+
+        "first_name",
+        "last_name",
+        "date_of_birth",
+        "gender",
+        "class_name",
+        "parent_name",
+        "parent_email",
+        "parent_phone",
+        "parent_whatsapp",
+        "relationship",
+
+    ]
+
+    header_fill = PatternFill(
+
+        start_color="1E40AF",
+        end_color="1E40AF",
+        fill_type="solid"
+
+    )
+
+    header_font = Font(
+
+        bold=True,
+        color="FFFFFF"
+
+    )
+
+    for col_num, header in enumerate(
+
+        headers,
+
+        start=1
+
+    ):
+
+        cell = sheet.cell(
+
+            row=1,
+
+            column=col_num
+
+        )
+
+        cell.value = header
+
+        cell.fill = header_fill
+
+        cell.font = header_font
+
+    sample_row = [
+
+        "John",
+        "Doe",
+        "2015-04-20",
+        "Male",
+        "JSS1",
+        "Jane Doe",
+        "jane@example.com",
+        "08012345678",
+        "08012345678",
+        "Mother",
+
+    ]
+
+    for col_num, value in enumerate(
+
+        sample_row,
+
+        start=1
+
+    ):
+
+        sheet.cell(
+
+            row=2,
+
+            column=col_num
+
+        ).value = value
+
+    for column in sheet.columns:
+
+        max_length = 0
+
+        column_letter = get_column_letter(
+
+            column[0].column
+
+        )
+
+        for cell in column:
+
+            try:
+
+                if len(str(cell.value)) > max_length:
+
+                    max_length = len(
+
+                        str(cell.value)
+
+                    )
+
+            except:
+
+                pass
+
+        sheet.column_dimensions[
+            column_letter
+        ].width = max_length + 5
+
+    sheet.freeze_panes = "A2"
+
+    instructions = workbook.create_sheet(
+
+        title="Instructions"
+
+    )
+
+    instructions["A1"] = (
+        "CODECAMP ATTENDANCE SYSTEM "
+        "STUDENT IMPORT TEMPLATE"
+    )
+
+    instructions["A1"].font = Font(
+
+        bold=True,
+        size=14
+
+    )
+
+    instructions["A3"] = (
+        "Fill one student per row."
+    )
+
+    instructions["A4"] = (
+        "Do not change the header names."
+    )
+
+    instructions["A5"] = (
+        "Date format must be YYYY-MM-DD."
+    )
+
+    instructions["A6"] = (
+        "Gender examples: Male, Female."
+    )
+
+    instructions["A7"] = (
+        "Relationship examples: "
+        "Father, Mother, Guardian."
+    )
+
+    instructions["A8"] = (
+        "Parent email is optional."
+    )
+
+    instructions["A9"] = (
+        "Parent phone numbers should "
+        "include leading zero."
+    )
+
+    response = HttpResponse(
+
+        content_type=(
+            "application/vnd.openxmlformats-"
+            "officedocument.spreadsheetml.sheet"
+        )
+
+    )
+
+    response[
+        "Content-Disposition"
+    ] = (
+        'attachment; '
+        'filename="student_import_template.xlsx"'
+    )
+
+    workbook.save(response)
+
+    return response
