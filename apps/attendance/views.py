@@ -12,6 +12,7 @@ from apps import attendance
 from apps.students.models import Student
 from config import settings
 from .models import Attendance
+from apps.settings_app.models import SystemSettings
 from django.db.models import Q
 from datetime import timedelta
 import csv
@@ -91,7 +92,7 @@ class QRScanView(View):
                             student
                         ),
                     "auto_whatsapp_popup":
-                        settings.AUTO_WHATSAPP_POPUP
+                        SystemSettings.objects.first().auto_whatsapp_popup
 
                 })
 
@@ -120,7 +121,7 @@ class QRScanView(View):
                             student
                         ),
                     "auto_whatsapp_popup":
-                        settings.AUTO_WHATSAPP_POPUP
+                        SystemSettings.objects.first().auto_whatsapp_popup
 
                 })
 
