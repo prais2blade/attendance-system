@@ -10,6 +10,7 @@ from django.utils.decorators import method_decorator
 
 from apps import attendance
 from apps.students.models import Student
+from config import settings
 from .models import Attendance
 from django.db.models import Q
 from datetime import timedelta
@@ -29,7 +30,8 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from apps.notifications.attendance_notifications import (
     notify_check_in,
-    notify_check_out
+    notify_check_out,
+    get_parent_whatsapp
 )
 
 
@@ -73,9 +75,24 @@ class QRScanView(View):
 
 
                 return JsonResponse({
+
                     "status": "CHECK_IN",
+                    
+                    "student": student.last_name + " " + student.first_name,
+                    
+                    "parent": student.parents.first().full_name if student.parents.exists() else "N/A",
+                    
                     "student": student.student_id,
-                    "time": now.strftime("%H:%M:%S")
+
+                    "time": now.strftime("%H:%M:%S"),
+
+                    "whatsapp_url":
+                        get_parent_whatsapp(
+                            student
+                        ),
+                    "auto_whatsapp_popup":
+                        settings.AUTO_WHATSAPP_POPUP
+
                 })
 
             if attendance.check_out is None:
@@ -87,9 +104,24 @@ class QRScanView(View):
                 notify_check_out(student, now)
 
                 return JsonResponse({
+
                     "status": "CHECK_OUT",
+                    
+                    "student": student.last_name + " " + student.first_name,
+
+                    "parent": student.parents.first().full_name if student.parents.exists() else "N/A",
+
                     "student": student.student_id,
-                    "time": now.strftime("%H:%M:%S")
+
+                    "time": now.strftime("%H:%M:%S"),
+
+                    "whatsapp_url":
+                        get_parent_whatsapp(
+                            student
+                        ),
+                    "auto_whatsapp_popup":
+                        settings.AUTO_WHATSAPP_POPUP
+
                 })
 
             return JsonResponse({

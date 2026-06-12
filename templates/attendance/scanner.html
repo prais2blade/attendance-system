@@ -19,7 +19,7 @@
     <div id="result">
         Waiting for scan...
     </div>
-    <div id="success-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden">
+    <div id="success-modal" class="fixed inset-0 bg-black/50 items-center justify-center hidden">
 
         <div class="bg-white rounded-xl p-8 w-96">
 
@@ -40,6 +40,12 @@
                 <button onclick="closeModal()" class="mt-5 bg-blue-600 text-white px-4 py-2 rounded">
                     Close
                 </button>
+                <a id="whatsapp-button" href="#" target="_blank"
+                    class="hidden bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+
+                    Send WhatsApp
+
+                </a>
 
             </div>
 
@@ -101,11 +107,34 @@
                         "scan-student"
                     ).innerText = data.student;
 
-                    document.getElementById(
-                        "success-modal"
-                    ).classList.remove(
-                        "hidden"
-                    );
+                    const successModal = document.getElementById("success-modal");
+                    successModal.classList.remove("hidden");
+                    successModal.classList.add("flex");
+
+                    const whatsappButton =
+                        document.getElementById(
+                            "whatsapp-button"
+                        );
+
+                    if (
+                        data.whatsapp_url
+                    ) {
+
+                        whatsappButton.href =
+                            data.whatsapp_url;
+
+                        whatsappButton.classList.remove(
+                            "hidden"
+                        );
+
+                    }
+                    else {
+
+                        whatsappButton.classList.add(
+                            "hidden"
+                        );
+
+                    }
 
                 })
 
@@ -150,13 +179,28 @@
 
         function closeModal() {
 
-            document
-                .getElementById(
-                    "success-modal"
-                )
-                .classList.add(
-                    "hidden"
-                );
+            const successModal = document.getElementById("success-modal");
+            successModal.classList.add("hidden");
+            successModal.classList.remove("flex");
+
+        }
+        if (
+
+            data.whatsapp_url
+
+            &&
+
+            data.auto_whatsapp_popup
+
+        ) {
+
+            window.open(
+
+                data.whatsapp_url,
+
+                "_blank"
+
+            );
 
         }
 

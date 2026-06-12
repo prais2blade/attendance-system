@@ -172,3 +172,54 @@ CodeCamp Innovation Hub
                 message=message
 
             )
+            
+            
+            
+def get_parent_whatsapp(student):
+
+    link = StudentParent.objects.filter(
+        student=student
+    ).first()
+
+    if not link:
+        return None
+
+    parent = link.parent
+
+    if not (
+        parent.whatsapp_number
+        and
+        parent.receive_whatsapp
+    ):
+        return None
+
+    greeting = (
+
+        f"{parent.title} {parent.full_name}"
+
+        if parent.title
+
+        else parent.full_name
+
+    )
+
+    message = f"""
+Dear {greeting},
+
+This is to inform you that
+{student.first_name} {student.last_name}
+has been marked present at
+CodeCamp Innovation Hub.
+
+Thank you.
+
+CodeCamp Innovation Hub
+"""
+
+    return build_whatsapp_url(
+
+        parent.whatsapp_number,
+
+        message
+
+    )
