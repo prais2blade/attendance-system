@@ -13,7 +13,7 @@ def create_notification(
 
 ):
 
-    return Notification.objects.create(
+    notification = Notification.objects.create(
 
         recipient=recipient,
 
@@ -26,7 +26,15 @@ def create_notification(
         status="pending"
 
     )
-    
+
+    from .process_notifications import (
+        process_pending_notifications
+    )
+
+    process_pending_notifications()
+
+    return notification
+
 
 
 def send_notification_email(notification):

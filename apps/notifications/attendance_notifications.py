@@ -53,7 +53,10 @@ Thank you.
 CodeCamp Innovation Hub
 """
 
-        if parent.email and parent.receive_email:
+        if (
+            parent.email
+            and parent.receive_email
+        ):
 
             create_notification(
 
@@ -66,21 +69,15 @@ CodeCamp Innovation Hub
                 message=message
 
             )
+
         if (
-
             parent.whatsapp_number
-
-            and
-
-            parent.receive_whatsapp
-
+            and parent.receive_whatsapp
         ):
 
             create_notification(
 
-                recipient=
-
-                    parent.whatsapp_number,
+                recipient=parent.whatsapp_number,
 
                 channel="whatsapp",
 
@@ -115,7 +112,7 @@ def notify_check_out(student, timestamp):
 
         check_out_time = timestamp.strftime(
             "%I:%M %p"
-)
+        )
 
         message = f"""
 Dear {greeting},
@@ -135,7 +132,10 @@ Thank you.
 CodeCamp Innovation Hub
 """
 
-        if parent.email and parent.receive_email:
+        if (
+            parent.email
+            and parent.receive_email
+        ):
 
             create_notification(
 
@@ -148,22 +148,15 @@ CodeCamp Innovation Hub
                 message=message
 
             )
-            
+
         if (
-
             parent.whatsapp_number
-
-            and
-
-            parent.receive_whatsapp
-
+            and parent.receive_whatsapp
         ):
 
             create_notification(
 
-                recipient=
-
-                    parent.whatsapp_number,
+                recipient=parent.whatsapp_number,
 
                 channel="whatsapp",
 
@@ -172,13 +165,14 @@ CodeCamp Innovation Hub
                 message=message
 
             )
-            
-            
-            
+
+
 def get_parent_whatsapp(student):
 
     link = StudentParent.objects.filter(
         student=student
+    ).select_related(
+        "parent"
     ).first()
 
     if not link:
@@ -188,8 +182,7 @@ def get_parent_whatsapp(student):
 
     if not (
         parent.whatsapp_number
-        and
-        parent.receive_whatsapp
+        and parent.receive_whatsapp
     ):
         return None
 
@@ -223,3 +216,17 @@ CodeCamp Innovation Hub
         message
 
     )
+
+
+def get_parent_name(student):
+
+    link = StudentParent.objects.filter(
+        student=student
+    ).select_related(
+        "parent"
+    ).first()
+
+    if not link:
+        return "N/A"
+
+    return link.parent.full_name

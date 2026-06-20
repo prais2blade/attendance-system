@@ -32,7 +32,8 @@ from reportlab.lib.styles import getSampleStyleSheet
 from apps.notifications.attendance_notifications import (
     notify_check_in,
     notify_check_out,
-    get_parent_whatsapp
+    get_parent_whatsapp,
+    get_parent_name
 )
 
 
@@ -78,12 +79,12 @@ class QRScanView(View):
                 return JsonResponse({
 
                     "status": "CHECK_IN",
-                    
-                    "student": student.last_name + " " + student.first_name,
-                    
-                    "parent": student.parents.first().full_name if student.parents.exists() else "N/A",
-                    
-                    "student": student.student_id,
+
+                    "student_name": student.last_name + " " + student.first_name,
+
+                    "parent": get_parent_name(student) if student.parents.exists() else "N/A",
+
+                    "student_id": student.student_id,
 
                     "time": now.strftime("%H:%M:%S"),
 
@@ -107,12 +108,12 @@ class QRScanView(View):
                 return JsonResponse({
 
                     "status": "CHECK_OUT",
-                    
-                    "student": student.last_name + " " + student.first_name,
 
-                    "parent": student.parents.first().full_name if student.parents.exists() else "N/A",
+                    "student_name": student.last_name + " " + student.first_name,
 
-                    "student": student.student_id,
+                    "parent": get_parent_name(student) if student.parents.exists() else "N/A",
+
+                    "student_id": student.student_id,
 
                     "time": now.strftime("%H:%M:%S"),
 

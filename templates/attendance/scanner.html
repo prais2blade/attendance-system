@@ -56,9 +56,28 @@
 
         function onScanSuccess(decodedText) {
 
-            const qrData = JSON.parse(
-                decodedText
-            );
+            let qrData;
+
+            try {
+
+                qrData = JSON.parse(
+                    decodedText
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Invalid QR Code",
+                    error
+                );
+
+                alert(
+                    "Invalid QR Code."
+                );
+
+                return;
+
+            }
 
             fetch(
 
@@ -69,7 +88,10 @@
                     method: "POST",
 
                     headers: {
-                        "Content-Type": "application/json"
+
+                        "Content-Type":
+                            "application/json"
+
                     },
 
                     body: JSON.stringify({
@@ -88,7 +110,9 @@
                     if (!response.ok) {
 
                         throw new Error(
-                            "Network Error"
+
+                            `HTTP Error: ${response.status}`
+
                         );
 
                     }
@@ -99,6 +123,12 @@
 
                 .then(data => {
 
+                    console.log(data);
+                    console.log(
+                        "WhatsApp URL:",
+                        data.whatsapp_url
+                    );
+
                     document.getElementById(
                         "scan-status"
                     ).innerText = data.status;
@@ -107,9 +137,18 @@
                         "scan-student"
                     ).innerText = data.student;
 
-                    const successModal = document.getElementById("success-modal");
-                    successModal.classList.remove("hidden");
-                    successModal.classList.add("flex");
+                    const successModal =
+                        document.getElementById(
+                            "success-modal"
+                        );
+
+                    successModal.classList.remove(
+                        "hidden"
+                    );
+
+                    successModal.classList.add(
+                        "flex"
+                    );
 
                     const whatsappButton =
                         document.getElementById(
@@ -117,21 +156,52 @@
                         );
 
                     if (
-                        data.whatsapp_url
+
+                        whatsappButton
+
                     ) {
 
-                        whatsappButton.href =
-                            data.whatsapp_url;
+                        if (
 
-                        whatsappButton.classList.remove(
-                            "hidden"
-                        );
+                            data.whatsapp_url
+
+                        ) {
+
+                            whatsappButton.href =
+                                data.whatsapp_url;
+
+                            whatsappButton.classList.remove(
+                                "hidden"
+                            );
+
+                        }
+
+                        else {
+
+                            whatsappButton.classList.add(
+                                "hidden"
+                            );
+
+                        }
 
                     }
-                    else {
 
-                        whatsappButton.classList.add(
-                            "hidden"
+                    if (
+
+                        data.whatsapp_url
+
+                        &&
+
+                        data.auto_whatsapp_popup
+
+                    ) {
+
+                        window.open(
+
+                            data.whatsapp_url,
+
+                            "_blank"
+
                         );
 
                     }
@@ -140,66 +210,86 @@
 
                 .catch(error => {
 
+                    console.error(
+                        "Scan Error:",
+                        error
+                    );
+
                     if (
-                        typeof queueAttendance
-                        === "function"
+
+                        !navigator.onLine
+
                     ) {
 
-                        queueAttendance(
-                            qrData.student_id
+                        if (
+
+                            typeof queueAttendance
+                            === "function"
+
+                        ) {
+
+                            queueAttendance(
+
+                                qrData.student_id
+
+                            );
+
+                        }
+
+                        alert(
+
+                            "Internet unavailable.\n\nAttendance saved locally and will sync automatically when connection returns."
+
                         );
 
                     }
 
-                    alert(
+                    else {
 
-                        "Internet unavailable.\n\nAttendance saved locally and will sync automatically when connection returns."
+                        alert(
 
-                    );
+                            "An unexpected error occurred. Please check the browser console."
+
+                        );
+
+                    }
 
                 });
 
         }
 
-        new Html5QrcodeScanner(
+        const html5QrScanner =
+            new Html5QrcodeScanner(
 
-            "reader",
+                "reader",
 
-            {
+                {
 
-                fps: 10,
+                    fps: 10,
 
-                qrbox: 250
+                    qrbox: 250
 
-            }
+                }
 
-        ).render(
+            );
+
+        html5QrScanner.render(
             onScanSuccess
         );
 
         function closeModal() {
 
-            const successModal = document.getElementById("success-modal");
-            successModal.classList.add("hidden");
-            successModal.classList.remove("flex");
+            const successModal =
+                document.getElementById(
+                    "success-modal"
+                );
 
-        }
-        if (
+            successModal.classList.add(
+                "hidden"
+            );
 
-            data.whatsapp_url
-
-            &&
-
-            data.auto_whatsapp_popup
-
-        ) {
-
-            window.open(
-
-                data.whatsapp_url,
-
-                "_blank"
-
+            successModal.classList.remove(
+                "flex"
             );
 
         }
