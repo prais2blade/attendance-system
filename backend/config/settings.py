@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'tailwind',
     'django_htmx',
+    'corsheaders',
     
     # local apps
     'apps.accounts',
@@ -48,12 +49,19 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+}
 
 ROOT_URLCONF = 'config.urls'
 
@@ -146,3 +154,10 @@ STATICFILES_DIRS = [
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+CORS_ALLOWED_ORIGINS = [
+
+    "http://localhost:5173",
+
+]
+
+CORS_ALLOW_ALL_ORIGINS = True

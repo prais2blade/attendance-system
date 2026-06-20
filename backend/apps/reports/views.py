@@ -1,5 +1,5 @@
-from django.http import JsonResponse
 from django.utils import timezone
+from django.http import JsonResponse
 
 from apps.students.models import Student
 from apps.attendance.models import Attendance
@@ -36,6 +36,6 @@ def dashboard_stats(request):
             checked_out,
 
         "absent":
-            absent
+            absent,
 
     })
