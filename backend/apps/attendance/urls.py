@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import QRScanView, dashboard_view, scanner_view, reports_dashboard, export_attendance_csv, export_attendance_excel, export_attendance_pdf
+from .api_views import attendance_today, attendance_history
 
 urlpatterns = [
     path(
@@ -34,5 +35,17 @@ path(
     "reports/export/pdf/",
     export_attendance_pdf,
     name="export_attendance_pdf"
+),
+path(
+    "today/", attendance_today, name="attendance_today"
+),
+path(
+
+    "history/<str:student_id>/",
+
+    attendance_history,
+
+    name="attendance_history"
+
 ),
 ]

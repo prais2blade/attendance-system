@@ -792,3 +792,5 @@ def export_attendance_pdf(request):
     doc.build(elements)
 
     return response
+
+

@@ -13,6 +13,9 @@ from .views import (
     bulk_id_cards,
     download_student_template,
 )
+from .api_views import (
+    student_detail_api
+)
 
 urlpatterns = [
     path(
@@ -71,5 +74,14 @@ path(
     "template/",
     download_student_template,
     name="student_template"
+),
+path(
+
+    "students/<str:student_id>/",
+
+    student_detail_api,
+
+    name="student_detail_api"
+
 ),
 ]

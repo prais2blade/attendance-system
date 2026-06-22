@@ -20,6 +20,12 @@ urlpatterns = [
         "apps.reports.urls"
     )
 ),
+    path(
+    "api/",
+    include(
+        "apps.students.urls"
+    )
+),
 ]
 
 if settings.DEBUG:
