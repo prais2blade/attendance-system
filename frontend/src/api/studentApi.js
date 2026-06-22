@@ -8,3 +8,13 @@ export const getStudentDetail = async (studentId) => {
 
     return response.data;
 };
+
+export const getStudents = async () => {
+
+    const response = await apiClient.get(
+        "/students/"
+    );
+
+    return response.data;
+
+};

@@ -7,6 +7,9 @@ from .models import Student
 from .serializers import (
     StudentDetailSerializer
 )
+from .serializers import (
+    StudentListSerializer
+)
 
 
 @api_view(["GET"])
@@ -28,6 +31,31 @@ def student_detail_api(
         StudentDetailSerializer(
 
             student,
+
+            context={
+                "request": request
+            }
+
+        )
+
+    )
+
+    return Response(
+        serializer.data
+    )
+    
+@api_view(["GET"])
+def student_list_api(request):
+
+    students = Student.objects.all()
+
+    serializer = (
+
+        StudentListSerializer(
+
+            students,
+
+            many=True,
 
             context={
                 "request": request

@@ -4,6 +4,7 @@ from .models import (
     Student,
     StudentParent
 )
+from .models import StudentParent
 
 
 class StudentDetailSerializer(
@@ -79,3 +80,62 @@ class StudentDetailSerializer(
                 parent.whatsapp_number,
 
         }
+
+
+class StudentListSerializer(
+    serializers.ModelSerializer
+):
+
+    photo = serializers.SerializerMethodField()
+
+    parent_name = serializers.SerializerMethodField()
+
+    class Meta:
+
+        model = Student
+
+        fields = [
+
+            "student_id",
+
+            "first_name",
+
+            "last_name",
+
+            "class_name",
+
+            "gender",
+
+            "photo",
+
+            "parent_name",
+
+        ]
+
+    def get_photo(self, obj):
+
+        request = self.context.get(
+            "request"
+        )
+
+        if obj.photo:
+
+            return request.build_absolute_uri(
+                obj.photo.url
+            )
+
+        return None
+
+    def get_parent_name(self, obj):
+
+        link = StudentParent.objects.filter(
+            student=obj
+        ).select_related(
+            "parent"
+        ).first()
+
+        if not link:
+
+            return "N/A"
+
+        return link.parent.full_name

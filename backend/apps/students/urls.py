@@ -14,7 +14,8 @@ from .views import (
     download_student_template,
 )
 from .api_views import (
-    student_detail_api
+    student_detail_api,
+    student_list_api,
 )
 
 urlpatterns = [
@@ -82,6 +83,15 @@ path(
     student_detail_api,
 
     name="student_detail_api"
+
+),
+path(
+
+    "students/",
+
+    student_list_api,
+
+    name="student_list_api"
 
 ),
 ]
