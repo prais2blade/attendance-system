@@ -1,168 +1,215 @@
 import { useState } from "react";
 
 import DashboardLayout from "../components/layout/DashboardLayout";
+import StudentDrawer from "../components/students/StudentDrawer";
 
 import { useStudents } from "../hooks/useStudents";
 
 export default function Students() {
 
-    const {
+    const { data: students = [] } = useStudents();
 
-        data: students = []
+    const [search, setSearch] = useState("");
+    const [selectedClass, setSelectedClass] = useState("All");
 
-    } = useStudents();
+    const [selectedStudent, setSelectedStudent] = useState(null);
+    const [drawerOpen, setDrawerOpen] = useState(false);
 
-    const [
+    const classes = [
 
-        search,
+        "All",
 
-        setSearch
+        ...new Set(
 
-    ] = useState("");
+            students
+                .map(student => student.class_name)
+                .filter(Boolean)
 
-    const filteredStudents = students.filter(
+        )
 
-        student =>
+    ];
 
-            (
-                student.first_name +
-                " " +
-                student.last_name
-            )
+    const filteredStudents = students.filter(student => {
 
-            .toLowerCase()
+        const fullName = (
 
-            .includes(
+            student.first_name +
+            " " +
+            student.last_name
 
-                search.toLowerCase()
+        ).toLowerCase();
 
-            )
+        const matchesSearch = fullName.includes(
+            search.toLowerCase()
+        );
 
-    );
+        const matchesClass =
+
+            selectedClass === "All"
+
+            ||
+
+            student.class_name === selectedClass;
+
+        return matchesSearch && matchesClass;
+
+    });
 
     return (
 
         <DashboardLayout>
 
-            <div className="flex justify-between items-center mb-6">
+            {/* Header */}
 
-                <h1 className="text-3xl font-bold">
+            <div className="flex justify-between items-center mb-8">
+
+                <h1 className="text-4xl font-bold">
 
                     Students
 
                 </h1>
 
-                <input
+                <div className="flex gap-3">
 
-                    type="text"
+                    <select
 
-                    placeholder="Search student..."
+                        value={selectedClass}
 
-                    value={search}
+                        onChange={(e) =>
 
-                    onChange={(e) =>
+                            setSelectedClass(
+                                e.target.value
+                            )
 
-                        setSearch(
-                            e.target.value
-                        )
+                        }
 
-                    }
+                        className="
+                            bg-slate-900
+                            border
+                            border-slate-700
+                            rounded-lg
+                            px-4
+                            py-2
+                        "
 
-                    className="
-                        bg-slate-900
-                        border
-                        border-slate-700
-                        rounded-lg
-                        px-4
-                        py-2
-                    "
+                    >
 
-                />
+                        {classes.map((cls) => (
+
+                            <option
+
+                                key={cls}
+
+                                value={cls}
+
+                            >
+
+                                {cls}
+
+                            </option>
+
+                        ))}
+
+                    </select>
+
+                    <input
+
+                        type="text"
+
+                        placeholder="Search student..."
+
+                        value={search}
+
+                        onChange={(e) =>
+
+                            setSearch(
+                                e.target.value
+                            )
+
+                        }
+
+                        className="
+                            bg-slate-900
+                            border
+                            border-slate-700
+                            rounded-lg
+                            px-4
+                            py-2
+                        "
+
+                    />
+
+                </div>
 
             </div>
 
+            {/* Student Cards */}
+
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                {filteredStudents.map(
+                {filteredStudents.map((student) => (
 
-                    student => (
+                    <div
 
-                        <div
+                        key={student.student_id}
 
-                            key={
-                                student.student_id
-                            }
+                        className="
+                            bg-slate-900
+                            rounded-xl
+                            p-6
+                            shadow-lg
+                        "
 
-                            className="
-                                bg-slate-900
-                                rounded-xl
-                                p-5
-                            "
+                    >
 
-                        >
+                        {/* Top Section */}
 
-                            <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 mb-4">
 
-                                {student.photo ? (
+                            {student.photo ? (
 
-                                    <img
+                                <img
 
-                                        src={student.photo}
+                                    src={student.photo}
 
-                                        alt="student"
+                                    alt={student.first_name}
 
-                                        className="
-                                            h-16
-                                            w-16
-                                            rounded-full
-                                            object-cover
-                                        "
+                                    className="
+                                        h-16
+                                        w-16
+                                        rounded-full
+                                        object-cover
+                                    "
 
-                                    />
+                                />
 
-                                ) : (
+                            ) : (
 
-                                    <div className="h-16 w-16 rounded-full bg-slate-700">
+                                <div
 
-                                    </div>
+                                    className="
+                                        h-16
+                                        w-16
+                                        rounded-full
+                                        bg-slate-700
+                                    "
 
-                                )}
+                                />
 
-                                <div>
+                            )}
 
-                                    <h3 className="font-semibold">
+                            <div>
 
-                                        {student.first_name}
-                                        {" "}
-                                        {student.last_name}
+                                <h3 className="font-bold text-xl">
 
-                                    </h3>
+                                    {student.first_name}{" "}
+                                    {student.last_name}
 
-                                    <p className="text-sm text-slate-400">
+                                </h3>
 
-                                        {student.student_id}
+                                <p className="text-slate-400">
 
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-                            <div className="mt-4 text-sm">
-
-                                <p>
-
-                                    Class:
-                                    {" "}
-                                    {student.class_name}
-
-                                </p>
-
-                                <p>
-
-                                    Parent:
-                                    {" "}
-                                    {student.parent_name}
+                                    {student.student_id}
 
                                 </p>
 
@@ -170,11 +217,137 @@ export default function Students() {
 
                         </div>
 
-                    )
+                        {/* Details */}
 
-                )}
+                        <div className="space-y-2 mb-4">
+
+                            <p>
+
+                                <strong>Class:</strong>{" "}
+                                {student.class_name || "N/A"}
+
+                            </p>
+
+                            <p>
+
+                                <strong>Parent:</strong>{" "}
+                                {student.parent_name || "N/A"}
+
+                            </p>
+
+                        </div>
+
+                        {/* Status */}
+
+                        <div className="mb-5">
+
+                            <span
+
+                                className="
+                                    bg-green-600
+                                    text-white
+                                    text-xs
+                                    px-3
+                                    py-1
+                                    rounded-full
+                                "
+
+                            >
+
+                                Active
+
+                            </span>
+
+                        </div>
+
+                        {/* Buttons */}
+
+                        <div className="flex gap-2">
+
+                            <button
+
+                                onClick={() => {
+
+                                    setSelectedStudent(
+                                        student.student_id
+                                    );
+
+                                    setDrawerOpen(true);
+
+                                }}
+
+                                className="
+                                    bg-blue-600
+                                    hover:bg-blue-700
+                                    px-4
+                                    py-2
+                                    rounded-lg
+                                    text-sm
+                                "
+
+                            >
+
+                                View
+
+                            </button>
+
+                            <button
+
+                                className="
+                                    bg-amber-600
+                                    hover:bg-amber-700
+                                    px-4
+                                    py-2
+                                    rounded-lg
+                                    text-sm
+                                "
+
+                            >
+
+                                Edit
+
+                            </button>
+
+                            <button
+
+                                className="
+                                    bg-purple-600
+                                    hover:bg-purple-700
+                                    px-4
+                                    py-2
+                                    rounded-lg
+                                    text-sm
+                                "
+
+                            >
+
+                                Portal
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                ))}
 
             </div>
+
+            {/* Drawer */}
+
+            <StudentDrawer
+
+                studentId={selectedStudent}
+
+                isOpen={drawerOpen}
+
+                onClose={() =>
+
+                    setDrawerOpen(false)
+
+                }
+
+            />
 
         </DashboardLayout>
 
