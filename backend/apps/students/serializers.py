@@ -2,9 +2,11 @@ from rest_framework import serializers
 
 from .models import (
     Student,
-    StudentParent
+    StudentParent,
+    Parent
 )
-from .models import StudentParent
+from rest_framework import exceptions
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 class StudentDetailSerializer(
@@ -139,3 +141,57 @@ class StudentListSerializer(
             return "N/A"
 
         return link.parent.full_name
+    
+
+class ParentLoginSerializer(serializers.Serializer):
+    phone_number = serializers.CharField()
+    password = serializers.CharField()
+    
+    
+
+class ParentChildSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    student_id = serializers.CharField()
+    full_name = serializers.CharField()
+    class_name = serializers.CharField()
+    attendance_today = serializers.BooleanField()
+    
+    
+class ParentJWTAuthentication(JWTAuthentication):
+    """
+    Authenticate Parent using JWT.
+    The JWT contains:
+        parent_id
+        phone
+    """
+
+    def authenticate(self, request):
+        header = self.get_header(request)
+
+        if header is None:
+            return None
+
+        raw_token = self.get_raw_token(header)
+
+        if raw_token is None:
+            return None
+
+        validated_token = self.get_validated_token(raw_token)
+
+        parent_id = validated_token.get("parent_id")
+
+        if not parent_id:
+            raise exceptions.AuthenticationFailed(
+                "Invalid parent token."
+            )
+
+        try:
+            parent = Parent.objects.get(id=parent_id)
+
+        except Parent.DoesNotExist:
+            raise exceptions.AuthenticationFailed(
+                "Parent account not found."
+            )
+
+        return (parent, validated_token)
+    

@@ -5,31 +5,19 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path(
-    "api/attendance/",
-    include(
-        "apps.attendance.urls"
-    )
-),
+    path("admin/", admin.site.urls),
+
+    # HTML pages
     path("students/", include("apps.students.urls")),
-    
-    path(
-    "api/",
-    include(
-        "apps.reports.urls"
-    )
-),
-    path(
-    "api/",
-    include(
-        "apps.students.urls"
-    )
-),
-    path(
-    "api/reports/",
-    include("apps.reports.urls")
-),
+
+    # Attendance APIs
+    path("api/attendance/", include("apps.attendance.urls")),
+
+    # Student + Parent APIs
+    path("api/", include("apps.students.api_urls")),
+
+    # Reports
+    path("api/reports/", include("apps.reports.urls")),
 ]
 
 if settings.DEBUG:

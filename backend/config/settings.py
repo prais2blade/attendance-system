@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'tailwind',
     'django_htmx',
     'corsheaders',
+    'rest_framework_simplejwt',
     
     # local apps
     'apps.accounts',

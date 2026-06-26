@@ -4,6 +4,7 @@ import qrcode
 from io import BytesIO
 from django.core.files import File
 import secrets
+from django.contrib.auth.hashers import make_password, check_password
 
 
 
@@ -23,6 +24,7 @@ def generate_student_id():
     next_number = last_number + 1
 
     return f"CDCP-{next_number:06d}"
+
 
 class Student(models.Model):
 
@@ -109,6 +111,7 @@ class Student(models.Model):
         buffer = BytesIO()
 
         img.save(buffer, format="PNG")
+        buffer.seek(0)
 
         filename = f"{self.student_id}.png"
 
@@ -139,70 +142,44 @@ class Student(models.Model):
             super().save(
                 update_fields=["qr_code"]
             )
-        
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+    
 
 class Parent(models.Model):
-
-    TITLE_CHOICES = (
-
-        ("Mr", "Mr"),
-
-        ("Mrs", "Mrs"),
-
-        ("Miss", "Miss"),
-
-        ("Dr", "Dr"),
-
-        ("Pastor", "Pastor"),
-
-        ("Chief", "Chief"),
-
-        ("Alhaji", "Alhaji"),
-
-    )
-
-    title = models.CharField(
-
-        max_length=20,
-
-        choices=TITLE_CHOICES,
-
-        blank=True
-
-    )
-
-    full_name = models.CharField(
-        max_length=200
-    )
+    title = models.CharField(max_length=20)
+    full_name = models.CharField(max_length=255)
 
     phone_number = models.CharField(
-        max_length=20
+        max_length=20,
+        unique=True
     )
 
     whatsapp_number = models.CharField(
-        max_length=20
+        max_length=20,
+        blank=True
     )
 
-    email = models.EmailField(
-        blank=True,
-        null=True
-    )
-    
-    receive_email = models.BooleanField(
-        default=True
-    )
+    email = models.EmailField(blank=True)
 
-    receive_whatsapp = models.BooleanField(
-        default=True
-    )
+    receive_email = models.BooleanField(default=True)
+    receive_whatsapp = models.BooleanField(default=True)
+
+    password = models.CharField(max_length=255)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def set_password(self, raw_password):
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.password)
 
     def __str__(self):
-
-        if self.title:
-
-            return f"{self.title} {self.full_name}"
-
         return self.full_name
+    
     
     
 class StudentParent(models.Model):
