@@ -1,36 +1,28 @@
-from .models import Parent
+from django.conf import settings
+
 from rest_framework import exceptions
+from rest_framework.authentication import BaseAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
+
 from .models import Parent
 
 
-def get_parent_from_token(request):
-
-    token = request.auth
-
-    if not token:
-        return None
-
-    parent_id = token.get("parent_id")
-
-    if not parent_id:
-        return None
-
-    try:
-        return Parent.objects.get(id=parent_id)
-    except Parent.DoesNotExist:
-        return None
-    
+# ==========================================================
+# Parent JWT Authentication
+# ==========================================================
 
 class ParentJWTAuthentication(JWTAuthentication):
     """
     Authenticate Parent using JWT.
+
     The JWT contains:
+
         parent_id
         phone
     """
 
     def authenticate(self, request):
+
         header = self.get_header(request)
 
         if header is None:
@@ -51,11 +43,104 @@ class ParentJWTAuthentication(JWTAuthentication):
             )
 
         try:
-            parent = Parent.objects.get(id=parent_id)
+
+            parent = Parent.objects.get(
+                id=parent_id
+            )
 
         except Parent.DoesNotExist:
+
             raise exceptions.AuthenticationFailed(
                 "Parent account not found."
             )
 
-        return (parent, validated_token)
+        return (
+            parent,
+            validated_token,
+        )
+
+
+# ==========================================================
+# Integration Authentication
+# ==========================================================
+
+class IntegrationAuthentication(BaseAuthentication):
+    """
+    Authentication for trusted server-to-server requests
+    coming from the CodeCamp platform.
+    """
+
+    def authenticate(self, request):
+
+        api_key = request.headers.get(
+            "X-API-KEY"
+        )
+
+        if not api_key:
+
+            raise exceptions.AuthenticationFailed(
+                "Missing API Key."
+            )
+
+        if api_key != settings.ATTENDANCE_API_KEY:
+
+            raise exceptions.AuthenticationFailed(
+                "Invalid API Key."
+            )
+
+        class IntegrationUser:
+
+            is_authenticated = True
+
+            username = "codecamp"
+
+        return (
+            IntegrationUser(),
+            None,
+        )
+    def authenticate(self, request):
+
+        api_key = request.headers.get("X-API-KEY")
+
+        print("========== INTEGRATION AUTH ==========")
+        print("Received:", api_key)
+        print("Expected:", settings.ATTENDANCE_API_KEY)
+
+        if not api_key:
+            raise exceptions.AuthenticationFailed("Missing API Key.")
+
+        if api_key != settings.ATTENDANCE_API_KEY:
+            raise exceptions.AuthenticationFailed("Invalid API Key.")
+
+        class IntegrationUser:
+            is_authenticated = True
+            username = "codecamp"
+
+        return (IntegrationUser(), None)
+
+
+# ==========================================================
+# Helper
+# ==========================================================
+
+def get_parent_from_token(request):
+
+    token = request.auth
+
+    if not token:
+        return None
+
+    parent_id = token.get("parent_id")
+
+    if not parent_id:
+        return None
+
+    try:
+
+        return Parent.objects.get(
+            id=parent_id
+        )
+
+    except Parent.DoesNotExist:
+
+        return None

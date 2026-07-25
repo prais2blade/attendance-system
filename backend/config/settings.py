@@ -18,6 +18,10 @@ ALLOWED_HOSTS = []
 
 AUTO_WHATSAPP_POPUP = False
 
+ATTENDANCE_API_KEY = "codecamp-secret-key"
+
+
+INTEGRATION_API_KEY = "CHANGE_THIS_TO_A_LONG_RANDOM_SECRET"
 
 # Application definition
 

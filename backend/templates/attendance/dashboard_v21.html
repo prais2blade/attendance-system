@@ -345,17 +345,17 @@ Dashboard
 
                             <div class="flex flex-wrap gap-2">
 
-                                <a href="{% url 'student_detail' row.student.id %}"
+                                <a href="{% url 'students:student_detail' row.student.id %}"
                                     class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm">
                                     View
                                 </a>
 
-                                <a href="{% url 'student_id_card' row.student.id %}"
+                                <a href="{% url 'students:student_id_card' row.student.id %}"
                                     class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-2 rounded text-sm">
                                     ID Card
                                 </a>
 
-                                <a href="{% url 'parent_portal' row.student.portal_token %}" target="_blank"
+                                <a href="{% url 'students:parent_portal' row.student.portal_token %}" target="_blank"
                                     class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm">
                                     Portal
                                 </a>

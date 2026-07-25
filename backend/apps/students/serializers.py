@@ -195,3 +195,37 @@ class ParentJWTAuthentication(JWTAuthentication):
 
         return (parent, validated_token)
     
+    
+class RegisterStudentSerializer(serializers.Serializer):
+
+    first_name = serializers.CharField(max_length=100)
+
+    last_name = serializers.CharField(max_length=100)
+
+    parent_name = serializers.CharField(max_length=200)
+
+    parent_phone = serializers.CharField(max_length=20)
+
+    parent_whatsapp = serializers.CharField(
+        max_length=20,
+        required=False,
+        allow_blank=True,
+    )
+
+    parent_email = serializers.EmailField(
+        required=False,
+        allow_blank=True,
+    )
+
+    relationship = serializers.CharField()
+
+    class_name = serializers.CharField()
+
+    mode = serializers.CharField()
+
+    registration_code = serializers.CharField()
+
+    camp_year = serializers.IntegerField()
+
+    program = serializers.CharField()
+    
