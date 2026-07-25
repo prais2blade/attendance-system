@@ -1,4 +1,6 @@
 from django.urls import path
+
+from apps.students.integration_views import RegisterStudentAPIView
 from .api.parent_auth import (
     ParentLoginAPIView,
 )
@@ -38,4 +40,10 @@ urlpatterns = [
     ParentProfileAPIView.as_view(),
     name="parent_profile",
 ),
+    
+    path(
+        "integration/register-student/",
+        RegisterStudentAPIView.as_view(),
+        name="integration_register_student",
+    ),
 ]

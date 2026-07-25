@@ -99,12 +99,12 @@ urlpatterns = [
     ),
 
     # ==========================================================
-    # CodeCamp Integration API
-    # ==========================================================
-
-    path(
-        "integration/register-student/",
-        RegisterStudentAPIView.as_view(),
-        name="integration_register_student",
-    ),
+        # CodeCamp Integration API
+        # ==========================================================
+    
+        path(
+            "integration/register-student/",
+            RegisterStudentAPIView.as_view(),
+            name="integration_register_student",
+        ),
 ]
