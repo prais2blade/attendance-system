@@ -10,7 +10,6 @@ class Attendance(models.Model):
         on_delete=models.CASCADE
     )
     
-    total_students = Student.objects.count()
 
     date = models.DateField()
 

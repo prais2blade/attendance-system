@@ -1,7 +1,10 @@
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / ".env")
 
 AUTH_USER_MODEL = 'accounts.User'
 
@@ -9,16 +12,22 @@ AUTH_USER_MODEL = 'accounts.User'
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-4)8uf7j$m7#nky$$6=v^tf!&54p0d6&xe+5s^m1435nveixi6t'
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = []
+DEBUG = os.getenv("DEBUG") == "True"
+
+ALLOWED_HOSTS = os.getenv(
+    "ALLOWED_HOSTS",
+    ""
+).split(",")
 
 AUTO_WHATSAPP_POPUP = False
 
-ATTENDANCE_API_KEY = "codecamp-secret-key"
+ATTENDANCE_API_KEY = os.getenv(
+    "ATTENDANCE_API_KEY"
+)
 
 
 INTEGRATION_API_KEY = "CHANGE_THIS_TO_A_LONG_RANDOM_SECRET"
@@ -87,19 +96,16 @@ TEMPLATES = [
 ]
 
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-
-EMAIL_HOST = "smtp.gmail.com"
-
-EMAIL_PORT = 587
-
-EMAIL_USE_TLS = True
-
-EMAIL_HOST_USER = "seravisitorapp@gmail.com"
-
-EMAIL_HOST_PASSWORD = "lstj fvwc wsyq hiki"
-
-DEFAULT_FROM_EMAIL = "CodeCamp Innovation Hub <seravisitorapp@gmail.com>"
+DATABASES = {
+    "default": {
+        "ENGINE": os.getenv("DB_ENGINE"),
+        "NAME": os.getenv("DB_NAME"),
+        "USER": os.getenv("DB_USER"),
+        "PASSWORD": os.getenv("DB_PASSWORD"),
+        "HOST": os.getenv("DB_HOST"),
+        "PORT": os.getenv("DB_PORT"),
+    }
+}
 
 
 WSGI_APPLICATION = 'config.wsgi.application'
