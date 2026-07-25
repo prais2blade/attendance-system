@@ -13,10 +13,15 @@ gunicorn==26.0.0
 openpyxl==3.1.5
 packaging==26.2
 pillow==12.2.0
+psycopg==3.3.4
+psycopg-binary==3.3.4
 psycopg2-binary==2.9.12
 PyJWT==2.13.0
 pytailwindcss==0.3.0
+python-decouple==3.8
+python-dotenv==1.2.2
 qrcode==8.2
 reportlab==4.5.1
 sqlparse==0.5.5
 tzdata==2026.2
+whitenoise==6.12.0
