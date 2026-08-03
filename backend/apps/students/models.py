@@ -149,33 +149,125 @@ class Student(models.Model):
     
 
 class Parent(models.Model):
-    title = models.CharField(max_length=20)
-    full_name = models.CharField(max_length=255)
+    title = models.CharField(
+        max_length=20,
+    )
+
+    full_name = models.CharField(
+        max_length=255,
+    )
 
     phone_number = models.CharField(
         max_length=20,
-        unique=True
+        unique=True,
     )
 
     whatsapp_number = models.CharField(
         max_length=20,
-        blank=True
+        blank=True,
     )
 
-    email = models.EmailField(blank=True)
+    email = models.EmailField(
+        blank=True,
+    )
 
-    receive_email = models.BooleanField(default=True)
-    receive_whatsapp = models.BooleanField(default=True)
+    receive_email = models.BooleanField(
+        default=True,
+    )
 
-    password = models.CharField(max_length=255)
+    receive_whatsapp = models.BooleanField(
+        default=True,
+    )
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    password = models.CharField(
+        max_length=255,
+    )
+
+    must_change_password = models.BooleanField(
+        default=True,
+        help_text=(
+            "Require the parent to change "
+            "their password after first login."
+        ),
+    )
+
+    last_login_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    last_password_change = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "full_name",
+        ]
+        indexes = [
+            models.Index(
+                fields=[
+                    "phone_number",
+                ]
+            ),
+            models.Index(
+                fields=[
+                    "full_name",
+                ]
+            ),
+        ]
 
     def set_password(self, raw_password):
-        self.password = make_password(raw_password)
+        self.password = make_password(
+            raw_password
+        )
 
     def check_password(self, raw_password):
-        return check_password(raw_password, self.password)
+        return check_password(
+            raw_password,
+            self.password,
+        )
+
+    def mark_password_changed(self):
+        from django.utils import timezone
+
+        self.must_change_password = False
+        self.last_password_change = (
+            timezone.now()
+        )
+
+        self.save(
+            update_fields=[
+                "must_change_password",
+                "last_password_change",
+            ]
+        )
+
+    def update_last_login(self):
+        from django.utils import timezone
+
+        self.last_login_at = (
+            timezone.now()
+        )
+
+        self.save(
+            update_fields=[
+                "last_login_at",
+            ]
+        )
 
     def __str__(self):
         return self.full_name
@@ -210,3 +302,76 @@ class StudentParent(models.Model):
             f"{self.parent}"
 
         )
+
+
+
+class Announcement(models.Model):
+    """
+    Summer announcements displayed on the
+    Parent Portal timeline.
+    """
+
+    TARGET_ALL = "ALL"
+    TARGET_CLASS = "CLASS"
+
+    TARGET_CHOICES = [
+        (TARGET_ALL, "All Students"),
+        (TARGET_CLASS, "Specific Class"),
+    ]
+
+    title = models.CharField(
+        max_length=200,
+    )
+
+    message = models.TextField()
+
+    target = models.CharField(
+        max_length=20,
+        choices=TARGET_CHOICES,
+        default=TARGET_ALL,
+    )
+
+    class_name = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    attachment = models.FileField(
+        upload_to="announcements/",
+        blank=True,
+        null=True,
+    )
+
+    publish_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    expires_at = models.DateTimeField(
+        blank=True,
+        null=True,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    created_by = models.CharField(
+        max_length=150,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-publish_at",
+        ]
+
+    def __str__(self):
+        return self.title

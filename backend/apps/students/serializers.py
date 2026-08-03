@@ -197,14 +197,48 @@ class ParentJWTAuthentication(JWTAuthentication):
     
     
 class RegisterStudentSerializer(serializers.Serializer):
+    """
+    Canonical registration contract shared by:
 
-    first_name = serializers.CharField(max_length=100)
+    - HTML Registration
+    - Excel Import
+    - CodeCamp Integration
+    """
 
-    last_name = serializers.CharField(max_length=100)
+    first_name = serializers.CharField(
+        max_length=100,
+    )
 
-    parent_name = serializers.CharField(max_length=200)
+    last_name = serializers.CharField(
+        max_length=100,
+        allow_blank=True,
+        required=False,
+    )
 
-    parent_phone = serializers.CharField(max_length=20)
+    date_of_birth = serializers.DateField(
+        required=False,
+        allow_null=True,
+    )
+
+    gender = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
+
+    class_name = serializers.CharField()
+
+    parent_title = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
+
+    parent_name = serializers.CharField(
+        max_length=200,
+    )
+
+    parent_phone = serializers.CharField(
+        max_length=20,
+    )
 
     parent_whatsapp = serializers.CharField(
         max_length=20,
@@ -219,13 +253,83 @@ class RegisterStudentSerializer(serializers.Serializer):
 
     relationship = serializers.CharField()
 
-    class_name = serializers.CharField()
+    photo = serializers.ImageField(
+        required=False,
+        allow_null=True,
+    )
 
-    mode = serializers.CharField()
+    mode = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
 
-    registration_code = serializers.CharField()
+    registration_code = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
 
-    camp_year = serializers.IntegerField()
+    camp_year = serializers.IntegerField(
+        required=False,
+    )
 
-    program = serializers.CharField()
-    
+    program = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
+
+
+class ParentChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+    )
+
+    new_password = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+        min_length=8,
+    )
+
+    confirm_password = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+    )
+
+    def validate(self, attrs):
+
+        if (
+            attrs["new_password"]
+            != attrs["confirm_password"]
+        ):
+            raise serializers.ValidationError(
+                {
+                    "confirm_password": (
+                        "Passwords do not match."
+                    )
+                }
+            )
+
+        return attrs
+
+class ParentProfileSerializer(serializers.Serializer):
+
+    title = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
+
+    full_name = serializers.CharField()
+
+    email = serializers.EmailField(
+        required=False,
+        allow_blank=True,
+    )
+
+    whatsapp_number = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
+
+    receive_email = serializers.BooleanField()
+
+    receive_whatsapp = serializers.BooleanField()

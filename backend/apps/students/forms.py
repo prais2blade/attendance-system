@@ -4,17 +4,31 @@ from .models import Student
 
 
 class StudentImportForm(forms.Form):
+    excel_file = forms.FileField(
+        label="Excel File",
+        help_text=(
+            "Upload the student import template "
+            "(.xlsx)"
+        ),
+    )
 
-    excel_file = forms.FileField()
+    def clean_excel_file(self):
+        excel_file = self.cleaned_data[
+            "excel_file"
+        ]
 
+        if not excel_file.name.endswith(
+            ".xlsx"
+        ):
+            raise forms.ValidationError(
+                "Only .xlsx files are supported."
+            )
 
-class StudentImportForm(forms.Form):
-
-    excel_file = forms.FileField()
+        return excel_file
 
 
 class StudentForm(forms.ModelForm):
-    
+
     parent_title = forms.ChoiceField(
 
         required=False,
@@ -74,10 +88,110 @@ class StudentForm(forms.ModelForm):
         self.fields[
             "date_of_birth"
         ].input_formats = [
-
             "%Y-%m-%d"
-
         ]
+
+        if not self.instance.pk:
+            return
+
+        relationship = (
+            self.instance.studentparent_set
+            .select_related("parent")
+            .first()
+        )
+
+        if not relationship:
+            return
+
+        parent = relationship.parent
+
+        self.fields[
+            "parent_title"
+        ].initial = parent.title
+
+        self.fields[
+            "parent_name"
+        ].initial = parent.full_name
+
+        self.fields[
+            "parent_email"
+        ].initial = parent.email
+
+        self.fields[
+            "parent_phone"
+        ].initial = parent.phone_number
+
+        self.fields[
+            "parent_whatsapp"
+        ].initial = parent.whatsapp_number
+
+        self.fields[
+            "relationship"
+        ].initial = relationship.relationship
+
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        parent_name = (
+            cleaned_data.get("parent_name") or ""
+        ).strip()
+
+        parent_phone = (
+            cleaned_data.get("parent_phone") or ""
+        ).strip()
+
+        parent_email = (
+            cleaned_data.get("parent_email") or ""
+        ).strip()
+
+        relationship = (
+            cleaned_data.get("relationship") or ""
+        ).strip()
+
+        if parent_name and not parent_phone:
+            self.add_error(
+                "parent_phone",
+                (
+                    "Parent phone number is required "
+                    "when a parent name is provided."
+                ),
+            )
+
+        if parent_phone and not parent_name:
+            self.add_error(
+                "parent_name",
+                (
+                    "Parent name is required "
+                    "when a parent phone number is provided."
+                ),
+            )
+
+        if parent_email:
+
+            existing_student = (
+                Student.objects.filter(
+                    parent_name=parent_name,
+                )
+                .exclude(
+                    pk=self.instance.pk,
+                )
+                .exists()
+            )
+
+            if (
+                not existing_student
+                and not relationship
+            ):
+                self.add_error(
+                    "relationship",
+                    (
+                        "Relationship is required "
+                        "when parent information is provided."
+                    ),
+                )
+
+        return cleaned_data
 
     class Meta:
 

@@ -35,5 +35,127 @@ class StudentAdmin(admin.ModelAdmin):
     )
 
 
+from django.contrib import admin
+
+from .models import Announcement
+
+
+@admin.register(Announcement)
+class AnnouncementAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "title",
+        "target",
+        "class_name",
+        "publish_at",
+        "expires_at",
+        "is_active",
+    )
+
+    list_filter = (
+        "target",
+        "is_active",
+        "publish_at",
+    )
+
+    search_fields = (
+        "title",
+        "message",
+        "class_name",
+    )
+
+    ordering = (
+        "-publish_at",
+    )
+
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+    )
+
+    fieldsets = (
+
+        (
+            "Announcement",
+            {
+                "fields": (
+                    "title",
+                    "message",
+                ),
+            },
+        ),
+
+        (
+            "Audience",
+            {
+                "fields": (
+                    "target",
+                    "class_name",
+                ),
+            },
+        ),
+
+        (
+            "Attachment",
+            {
+                "fields": (
+                    "attachment",
+                ),
+            },
+        ),
+
+        (
+            "Publication",
+            {
+                "fields": (
+                    "is_active",
+                    "publish_at",
+                    "expires_at",
+                ),
+            },
+        ),
+
+        (
+            "Audit",
+            {
+                "fields": (
+                    "created_by",
+                    "created_at",
+                    "updated_at",
+                ),
+            },
+        ),
+
+    )
+
+    actions = (
+        "activate_announcements",
+        "deactivate_announcements",
+    )
+
+    @admin.action(
+        description="Activate selected announcements"
+    )
+    def activate_announcements(
+        self,
+        request,
+        queryset,
+    ):
+        queryset.update(
+            is_active=True,
+        )
+
+    @admin.action(
+        description="Deactivate selected announcements"
+    )
+    def deactivate_announcements(
+        self,
+        request,
+        queryset,
+    ):
+        queryset.update(
+            is_active=False,
+        )
+
 admin.site.register(Parent)
 admin.site.register(StudentParent)
