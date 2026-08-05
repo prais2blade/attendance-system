@@ -43,6 +43,12 @@ Students
                     Generate ID Cards
                 </button>
 
+                <button form="bulk-form" type="submit" formaction="{% url 'students:bulk_id_cards' %}"
+                    name="all_students" value="1"
+                    class="bg-emerald-800 hover:bg-emerald-900 text-white px-5 py-3 rounded-lg">
+                    Generate All ID Cards
+                </button>
+
                 <button form="regenerate-missing-qr-form" type="submit"
                     class="bg-slate-700 hover:bg-slate-800 text-white px-5 py-3 rounded-lg">
                     Regenerate Missing QRs

@@ -1,4 +1,5 @@
 import os
+import tempfile
 import zipfile
 from io import BytesIO
 
@@ -26,7 +27,7 @@ from .id_card_generator import (
     get_bulk_id_card_position,
     get_id_card_settings,
 )
-from .models import Student, StudentParent
+from .models import Student
 from .qr_utils import (
     ensure_student_qr_code,
     get_existing_file_path,
@@ -333,55 +334,17 @@ def edit_student(request, pk):
         if form.is_valid():
             student = form.save()
 
-            parent_relation = (
-                StudentParent.objects.select_related("parent")
-                .filter(student=student)
-                .first()
+            RegistrationIntegrationService.sync_parent_for_student(
+                student=student,
+                data={
+                    "parent_title": form.cleaned_data.get("parent_title", ""),
+                    "parent_name": form.cleaned_data.get("parent_name", ""),
+                    "parent_email": form.cleaned_data.get("parent_email", ""),
+                    "parent_phone": form.cleaned_data.get("parent_phone", ""),
+                    "parent_whatsapp": form.cleaned_data.get("parent_whatsapp", ""),
+                    "relationship": form.cleaned_data.get("relationship", ""),
+                },
             )
-
-            if parent_relation:
-                parent = parent_relation.parent
-
-                parent.title = form.cleaned_data.get(
-                    "parent_title",
-                    parent.title,
-                )
-                parent.full_name = form.cleaned_data.get(
-                    "parent_name",
-                    parent.full_name,
-                )
-                parent.email = form.cleaned_data.get(
-                    "parent_email",
-                    parent.email,
-                )
-                parent.phone_number = form.cleaned_data.get(
-                    "parent_phone",
-                    parent.phone_number,
-                )
-                parent.whatsapp_number = form.cleaned_data.get(
-                    "parent_whatsapp",
-                    parent.whatsapp_number,
-                )
-
-                parent.save(
-                    update_fields=[
-                        "title",
-                        "full_name",
-                        "email",
-                        "phone_number",
-                        "whatsapp_number",
-                    ]
-                )
-
-                relationship = form.cleaned_data.get("relationship")
-
-                if relationship and parent_relation.relationship != relationship:
-                    parent_relation.relationship = relationship
-                    parent_relation.save(
-                        update_fields=[
-                            "relationship",
-                        ]
-                    )
 
             messages.success(
                 request,
@@ -540,25 +503,36 @@ def bulk_id_cards(request):
         return redirect("students:student_list")
 
     student_ids = request.POST.getlist("students")
+    download_all = request.POST.get("all_students") == "1"
 
-    if not student_ids:
+    if not student_ids and not download_all:
         messages.warning(
             request,
             "No students were selected.",
         )
 
+        next_url = request.POST.get("next") or request.META.get("HTTP_REFERER")
+
+        if next_url:
+            return redirect(next_url)
+
         return redirect("students:student_list")
 
-    students = Student.objects.filter(id__in=student_ids).order_by("student_id")
+    students = Student.objects.all()
 
-    buffer = BytesIO()
+    if not download_all:
+        students = students.filter(id__in=student_ids)
+
+    students = students.order_by("student_id")
+
+    output = tempfile.TemporaryFile()
     pdf = canvas.Canvas(
-        buffer,
+        output,
         pagesize=BULK_ID_CARD_PAGE_SIZE,
     )
     id_card_settings = get_id_card_settings()
 
-    for index, student in enumerate(students):
+    for index, student in enumerate(students.iterator(chunk_size=100)):
         if index and index % ID_CARDS_PER_BULK_PAGE == 0:
             pdf.showPage()
 
@@ -573,10 +547,10 @@ def bulk_id_cards(request):
         )
 
     pdf.save()
-    buffer.seek(0)
+    output.seek(0)
 
     return FileResponse(
-        buffer,
+        output,
         as_attachment=True,
         filename="student_id_cards_a4.pdf",
     )

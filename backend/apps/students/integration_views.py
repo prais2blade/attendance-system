@@ -38,5 +38,7 @@ class RegisterStudentAPIView(APIView):
 
             "parent_created": result["parent_created"],
 
+            "student_created": result["student_created"],
+
             "temporary_password": result["temporary_password"],
         })

@@ -18,14 +18,16 @@ from .qr_utils import ensure_student_qr_code, get_existing_file_path
 
 A4_LANDSCAPE_SIZE = landscape(A4)
 ID_CARD_SIZE = (
-    A4_LANDSCAPE_SIZE[0] / 2,
-    A4_LANDSCAPE_SIZE[1] / 2,
+    99 * mm,
+    105 * mm,
 )
 BULK_ID_CARD_PAGE_SIZE = A4_LANDSCAPE_SIZE
-ID_CARDS_PER_BULK_PAGE = 4
+BULK_ID_CARD_COLUMNS = 3
+BULK_ID_CARD_ROWS = 2
+ID_CARDS_PER_BULK_PAGE = BULK_ID_CARD_COLUMNS * BULK_ID_CARD_ROWS
 
-CARD_WIDTH = 85.6 * mm
-CARD_HEIGHT = 54 * mm
+CARD_WIDTH = ID_CARD_SIZE[0]
+CARD_HEIGHT = ID_CARD_SIZE[1]
 
 CARD_MARGIN = 4
 CARD_X = CARD_MARGIN
@@ -62,7 +64,7 @@ def draw_student_id_card(
     height=None,
 ):
     """
-    Draw one premium landscape student ID card in an A6 print slot.
+    Draw one premium student ID card in a 99mm x 105mm print slot.
     """
 
     system_settings = system_settings or get_id_card_settings()
@@ -92,8 +94,8 @@ def draw_student_id_card(
 
 def get_bulk_id_card_position(index):
     slot_index = index % ID_CARDS_PER_BULK_PAGE
-    column = slot_index % 2
-    row = 1 - (slot_index // 2)
+    column = slot_index % BULK_ID_CARD_COLUMNS
+    row = (BULK_ID_CARD_ROWS - 1) - (slot_index // BULK_ID_CARD_COLUMNS)
 
     return (
         column * ID_CARD_SIZE[0],
@@ -237,9 +239,9 @@ def _draw_wave(pdf, y, height, stroke_color, fill_color, line_width):
 
 def _draw_brand(pdf, organization_name, system_settings):
     logo_path, use_default_logo = _brand_logo_path(system_settings)
-    logo_x = CARD_X + 11
-    logo_y = CARD_Y + CARD_H - 31
-    logo_size = 22
+    logo_x = CARD_X + 13
+    logo_y = CARD_Y + CARD_H - 39
+    logo_size = 28
 
     if logo_path:
         if use_default_logo:
@@ -259,7 +261,7 @@ def _draw_brand(pdf, organization_name, system_settings):
         _draw_fallback_logo(pdf, logo_x, logo_y, logo_size)
 
     text_x = logo_x + logo_size + 8
-    text_y = logo_y + 14
+    text_y = logo_y + 18
 
     pdf.setFillColor(WHITE)
     _draw_fit_text(
@@ -269,13 +271,13 @@ def _draw_brand(pdf, organization_name, system_settings):
         text_y,
         CARD_X + CARD_W - text_x - 15,
         "Helvetica-Bold",
-        14,
-        8,
+        13.5,
+        7.5,
     )
 
     pdf.setFillColor(MUTED)
-    pdf.setFont("Helvetica", 6.6)
-    pdf.drawString(text_x, text_y - 10, "STUDENT IDENTIFICATION CARD")
+    pdf.setFont("Helvetica", 7)
+    pdf.drawString(text_x, text_y - 11, "STUDENT IDENTIFICATION CARD")
 
 
 def _brand_logo_path(system_settings):
@@ -347,9 +349,9 @@ def _draw_fallback_logo(pdf, x, y, size):
 
 
 def _draw_photo(pdf, student):
-    cx = CARD_X + 47
-    cy = CARD_Y + 65
-    radius = 33
+    cx = CARD_X + CARD_W * 0.29
+    cy = CARD_Y + CARD_H * 0.56
+    radius = 43
     photo_path = get_existing_file_path(student.photo)
 
     pdf.setFillColor(colors.Color(1, 1, 1, alpha=0.23))
@@ -412,23 +414,22 @@ def _draw_initials_placeholder(pdf, student, cx, cy, radius):
     pdf.setFillColor(colors.HexColor("#F2E9FF"))
     pdf.circle(cx, cy, radius, fill=1, stroke=0)
     pdf.setFillColor(VIOLET)
-    pdf.setFont("Helvetica-Bold", 18)
-    pdf.drawCentredString(cx, cy - 6, initials[:2])
+    pdf.setFont("Helvetica-Bold", 22)
+    pdf.drawCentredString(cx, cy - 7, initials[:2])
 
 
 def _draw_student_details(pdf, student):
-    x = CARD_X + 84
-    y = CARD_Y + 82
-    qr_x, _, _, _ = _qr_box_geometry()
-    max_width = qr_x - x - 7
+    x = CARD_X + CARD_W * 0.52
+    y = CARD_Y + CARD_H * 0.70
+    max_width = CARD_X + CARD_W - x - 16
     full_name = student.full_name.upper().strip()
     lines, font_size = _fit_wrapped_text(
         full_name,
         "Helvetica-Bold",
         max_width,
         max_lines=5,
-        max_size=14.5,
-        min_size=6.2,
+        max_size=14.2,
+        min_size=5.8,
     )
 
     pdf.setFillColor(WHITE)
@@ -438,7 +439,7 @@ def _draw_student_details(pdf, student):
     for index, line in enumerate(lines):
         pdf.drawString(x, y - (index * line_gap), line)
 
-    after_name_y = y - (len(lines) * line_gap) - 2
+    after_name_y = y - (len(lines) * line_gap) - 3
     pdf.setFillColor(MUTED)
     _draw_fit_text(
         pdf,
@@ -453,15 +454,15 @@ def _draw_student_details(pdf, student):
 
     pdf.setFillColor(WHITE)
     pdf.setFont("Helvetica-Bold", 8.2)
-    pdf.drawString(x, after_name_y - 17, "ID:")
+    pdf.drawString(x, after_name_y - 16, "ID:")
     _draw_fit_text(
         pdf,
         student.student_id,
         x + 16,
-        after_name_y - 17,
+        after_name_y - 16,
         max_width - 16,
         "Helvetica-Bold",
-        10.5,
+        10,
         7,
     )
 
@@ -508,39 +509,39 @@ def _draw_qr_code(pdf, student):
 def _draw_status(pdf, student):
     valid_until = _valid_until()
     box_x, _, box_size, _ = _qr_box_geometry()
-    y = CARD_Y + 19
+    y = CARD_Y + 23
 
     pdf.setFillColor(WHITE)
     _draw_fit_centered_text(
         pdf,
         f"VALID UNTIL: {valid_until}",
         box_x + (box_size / 2),
-        y + 20,
-        64,
+        y + 22,
+        78,
         "Helvetica-Bold",
-        6.7,
+        7,
         4.8,
     )
 
     active = getattr(student, "is_active", True)
     badge_color = GREEN if active else SLATE
     badge_text = "ACTIVE" if active else "INACTIVE"
-    badge_w = 48
-    badge_h = 13
+    badge_w = 58
+    badge_h = 15
     badge_x = box_x + ((box_size - badge_w) / 2)
     badge_y = y
 
     pdf.setFillColor(badge_color)
     pdf.roundRect(badge_x, badge_y, badge_w, badge_h, 4, fill=1, stroke=0)
     pdf.setFillColor(WHITE)
-    pdf.setFont("Helvetica-Bold", 8.5)
-    pdf.drawCentredString(badge_x + (badge_w / 2), badge_y + 3.4, badge_text)
+    pdf.setFont("Helvetica-Bold", 9)
+    pdf.drawCentredString(badge_x + (badge_w / 2), badge_y + 4, badge_text)
 
 
 def _qr_box_geometry():
-    box_size = 51
-    box_x = CARD_X + CARD_W - box_size - 13
-    box_y = CARD_Y + 46
+    box_size = 64
+    box_x = CARD_X + CARD_W - box_size - 17
+    box_y = CARD_Y + 57
 
     return box_x, box_y, box_size, box_size
 
@@ -560,11 +561,11 @@ def _draw_footer(pdf, organization_name):
     _draw_fit_text(
         pdf,
         text,
-        CARD_X + 11,
+        CARD_X + 13,
         CARD_Y + 7,
-        CARD_W - 22,
-        "Helvetica-Bold",
-        6.5,
+        CARD_W - 26,
+        "Helvetica",
+        6.8,
         4.8,
     )
 

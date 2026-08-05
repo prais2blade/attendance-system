@@ -15,6 +15,7 @@ Students
         <div class="flex flex-wrap gap-2">
             <form id="bulk-id-card-form" method="POST" action="{% url 'students:bulk_id_cards' %}">
                 {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
             </form>
             <button
                 type="submit"
@@ -22,6 +23,15 @@ Students
                 class="inline-flex justify-center rounded-lg bg-purple-700 px-5 py-3 font-semibold text-white hover:bg-purple-800"
             >
                 Download Selected ID Cards
+            </button>
+            <button
+                type="submit"
+                form="bulk-id-card-form"
+                name="all_students"
+                value="1"
+                class="inline-flex justify-center rounded-lg border border-purple-200 bg-purple-50 px-5 py-3 font-semibold text-purple-800 hover:bg-purple-100"
+            >
+                Download All ID Cards
             </button>
             <form method="POST" action="{% url 'students:regenerate_missing_qr_codes' %}">
                 {% csrf_token %}

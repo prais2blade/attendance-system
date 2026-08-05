@@ -68,6 +68,7 @@ class RegisterStudentAPIView(APIView):
                 "student": {
                     "id": result["student"].id,
                     "student_id": result["student"].student_id,
+                    "created": result["student_created"],
                 },
                 "parent": {
                     "id": result["parent"].id,

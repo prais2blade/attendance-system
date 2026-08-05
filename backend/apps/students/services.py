@@ -1,6 +1,6 @@
 import secrets
 
-from django.db import models, transaction
+from django.db import IntegrityError, models, transaction
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -71,7 +71,7 @@ class RegistrationIntegrationService:
 
         parent, temporary_password, parent_created = cls.get_or_create_parent(data)
 
-        student = cls.create_student(
+        student, student_created = cls.get_or_create_student(
             data=data,
             parent=parent,
         )
@@ -100,6 +100,7 @@ class RegistrationIntegrationService:
             "relationship": relationship,
             "temporary_password": temporary_password,
             "parent_created": parent_created,
+            "student_created": student_created,
         }
 
     # =====================================================
@@ -110,13 +111,39 @@ class RegistrationIntegrationService:
     def normalize_payload(cls, data):
         normalized = dict(data)
 
+        for key, value in list(normalized.items()):
+            if isinstance(value, str):
+                normalized[key] = value.strip()
+
         if not normalized.get("class_name") and normalized.get("batch"):
             normalized["class_name"] = normalized["batch"]
 
         if not normalized.get("relationship"):
             normalized["relationship"] = "Guardian"
 
+        if normalized.get("parent_phone"):
+            normalized["parent_phone"] = cls.normalize_phone(
+                normalized["parent_phone"]
+            )
+
+        integration_key = (
+            normalized.get("integration_key")
+            or normalized.get("registration_code")
+            or normalized.get("external_id")
+            or ""
+        )
+        normalized["integration_key"] = integration_key.strip() or None
+
         return normalized
+
+    @staticmethod
+    def normalize_phone(phone_number):
+        return (
+            str(phone_number)
+            .strip()
+            .replace(" ", "")
+            .replace("-", "")
+        )
 
     @classmethod
     def validate_payload(cls, data):
@@ -138,6 +165,12 @@ class RegistrationIntegrationService:
         if parent:
             updated = False
 
+            parent_title = data.get("parent_title", "")
+
+            if parent_title and parent.title != parent_title:
+                parent.title = parent_title
+                updated = True
+
             if parent.full_name != data["parent_name"]:
                 parent.full_name = data["parent_name"]
                 updated = True
@@ -157,6 +190,7 @@ class RegistrationIntegrationService:
             if updated:
                 parent.save(
                     update_fields=[
+                        "title",
                         "full_name",
                         "whatsapp_number",
                         "email",
@@ -168,6 +202,7 @@ class RegistrationIntegrationService:
         temporary_password = secrets.token_urlsafe(8)
 
         parent = Parent(
+            title=data.get("parent_title", ""),
             full_name=data["parent_name"],
             phone_number=data["parent_phone"],
             whatsapp_number=data.get("parent_whatsapp", ""),
@@ -182,6 +217,106 @@ class RegistrationIntegrationService:
     # =====================================================
     # Student
     # =====================================================
+
+    @classmethod
+    def get_or_create_student(cls, data, parent):
+        integration_key = data.get("integration_key")
+
+        student = cls.find_existing_student(
+            data=data,
+            parent=parent,
+            integration_key=integration_key,
+        )
+
+        if student:
+            cls.sync_student_fields(
+                student=student,
+                data=data,
+                parent=parent,
+            )
+            return student, False
+
+        return cls.create_student(
+            data=data,
+            parent=parent,
+        )
+
+    @classmethod
+    def find_existing_student(cls, data, parent, integration_key=None):
+        if integration_key:
+            student = (
+                Student.objects.select_for_update()
+                .filter(integration_key=integration_key)
+                .first()
+            )
+
+            if student:
+                return student
+
+        candidates = (
+            Student.objects.select_for_update()
+            .filter(
+                first_name__iexact=data["first_name"],
+                last_name__iexact=data["last_name"],
+                class_name__iexact=data["class_name"],
+                parents__parent=parent,
+            )
+            .order_by("id")
+        )
+
+        date_of_birth = data.get("date_of_birth")
+
+        if date_of_birth:
+            candidates = candidates.filter(
+                date_of_birth=date_of_birth,
+            )
+
+        return candidates.first()
+
+    @classmethod
+    def sync_student_fields(cls, student, data, parent):
+        fields_to_update = []
+
+        field_values = {
+            "first_name": data["first_name"],
+            "last_name": data["last_name"],
+            "class_name": data["class_name"],
+            "parent_name": parent.full_name,
+        }
+
+        integration_key = data.get("integration_key")
+
+        if integration_key and student.integration_key != integration_key:
+            field_values["integration_key"] = integration_key
+
+        teaching_class = cls.get_teaching_class(data)
+
+        if teaching_class and student.teaching_class_id != teaching_class.id:
+            student.teaching_class = teaching_class
+            fields_to_update.append("teaching_class")
+            field_values["class_name"] = teaching_class.name
+
+        for optional_field in (
+            "date_of_birth",
+            "gender",
+        ):
+            if optional_field in data:
+                field_values[optional_field] = data.get(optional_field)
+
+        if data.get("photo"):
+            field_values["photo"] = data["photo"]
+
+        for field, value in field_values.items():
+            if getattr(student, field) != value:
+                setattr(student, field, value)
+                fields_to_update.append(field)
+
+        if fields_to_update:
+            student.save(
+                update_fields=sorted(set(fields_to_update)),
+            )
+
+        return student
 
     @classmethod
     def create_student(cls, data, parent):
@@ -200,18 +335,14 @@ class RegistrationIntegrationService:
             last_name=data["last_name"],
             class_name=data["class_name"],
             parent_name=parent.full_name,
+            integration_key=data.get("integration_key"),
         )
 
-        teaching_class = data.get("teaching_class")
-
-        if not teaching_class:
-            teaching_class = TeachingClass.objects.filter(
-                name__iexact=data["class_name"],
-                is_active=True,
-            ).first()
+        teaching_class = cls.get_teaching_class(data)
 
         if teaching_class:
             student.teaching_class = teaching_class
+            student.class_name = teaching_class.name
 
         if "date_of_birth" in data:
             student.date_of_birth = data.get("date_of_birth")
@@ -222,9 +353,38 @@ class RegistrationIntegrationService:
         if data.get("photo"):
             student.photo = data["photo"]
 
-        student.save()
+        created = True
 
-        return student
+        try:
+            with transaction.atomic():
+                student.save()
+        except IntegrityError:
+            if not data.get("integration_key"):
+                raise
+
+            student = Student.objects.select_for_update().get(
+                integration_key=data["integration_key"],
+            )
+            cls.sync_student_fields(
+                student=student,
+                data=data,
+                parent=parent,
+            )
+            created = False
+
+        return student, created
+
+    @classmethod
+    def get_teaching_class(cls, data):
+        teaching_class = data.get("teaching_class")
+
+        if teaching_class:
+            return teaching_class
+
+        return TeachingClass.objects.filter(
+            name__iexact=data["class_name"],
+            is_active=True,
+        ).first()
 
     # =====================================================
     # Relationship
@@ -244,23 +404,75 @@ class RegistrationIntegrationService:
         already exists, it is updated when necessary.
         """
 
-        relation, created = StudentParent.objects.get_or_create(
+        relation = StudentParent.objects.filter(
             parent=parent,
             student=student,
-            defaults={
-                "relationship": relationship,
-            },
-        )
+        ).order_by("id").first()
 
-        if not created and relation.relationship != relationship:
+        if not relation:
+            relation = StudentParent.objects.filter(
+                student=student,
+            ).order_by("id").first()
+
+        if not relation:
+            relation = StudentParent(
+                parent=parent,
+                student=student,
+            )
+
+        fields_to_update = []
+
+        if relation.parent_id != parent.id:
+            relation.parent = parent
+            fields_to_update.append("parent")
+
+        if relation.relationship != relationship:
             relation.relationship = relationship
-            relation.save(
-                update_fields=[
-                    "relationship",
-                ]
+            fields_to_update.append("relationship")
+
+        if relation.teaching_class_id != getattr(student, "teaching_class_id", None):
+            relation.teaching_class = student.teaching_class
+            fields_to_update.append("teaching_class")
+
+        if relation.pk:
+            if fields_to_update:
+                relation.save(
+                    update_fields=fields_to_update,
+                )
+        else:
+            relation.save()
+
+        StudentParent.objects.filter(
+            student=student,
+        ).exclude(pk=relation.pk).delete()
+
+        student_updates = []
+
+        if student.parent_name != parent.full_name:
+            student.parent_name = parent.full_name
+            student_updates.append("parent_name")
+
+        if student_updates:
+            student.save(
+                update_fields=student_updates,
             )
 
         return relation
+
+    @classmethod
+    def sync_parent_for_student(cls, student, data):
+        data = cls.normalize_payload(data)
+
+        if not data.get("parent_name") and not data.get("parent_phone"):
+            return None
+
+        parent, _, _ = cls.get_or_create_parent(data)
+
+        return cls.link_parent(
+            parent=parent,
+            student=student,
+            relationship=data.get("relationship") or "Guardian",
+        )
 
 
 class ParentLoginService:

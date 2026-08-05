@@ -35,6 +35,18 @@ class Student(models.Model):
         blank=True,
     )
 
+    integration_key = models.CharField(
+        max_length=120,
+        unique=True,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text=(
+            "External registration key used to prevent duplicate "
+            "students from integration retries."
+        ),
+    )
+
     first_name = models.CharField(
         max_length=100,
     )
