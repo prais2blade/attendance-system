@@ -15,6 +15,7 @@ from .views import (
     regenerate_student_qr,
     student_detail,
     student_id_card,
+    student_photo,
     student_qr_code,
     student_list,
 )
@@ -59,6 +60,11 @@ urlpatterns = [
         "<int:pk>/qr-code/",
         student_qr_code,
         name="student_qr_code",
+    ),
+    path(
+        "<int:pk>/photo/",
+        student_photo,
+        name="student_photo",
     ),
     path(
         "regenerate-missing-qr/",

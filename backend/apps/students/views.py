@@ -1,6 +1,7 @@
 import os
 import tempfile
 import zipfile
+import mimetypes
 from io import BytesIO
 
 from django.conf import settings
@@ -81,6 +82,35 @@ def student_qr_code(request, pk):
             )
         except (FileNotFoundError, OSError, ValueError) as exc:
             raise Http404("QR code is not available.") from exc
+
+    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+
+    return response
+
+
+@admin_required
+def student_photo(request, pk):
+    student = get_object_or_404(
+        Student,
+        pk=pk,
+    )
+
+    if not student.photo:
+        raise Http404("Student photo is not available.")
+
+    content_type = (
+        mimetypes.guess_type(student.photo.name)[0]
+        or "application/octet-stream"
+    )
+
+    try:
+        response = FileResponse(
+            student.photo.open("rb"),
+            content_type=content_type,
+        )
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        raise Http404("Student photo is not available.") from exc
 
     response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response["Pragma"] = "no-cache"

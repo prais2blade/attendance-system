@@ -45,7 +45,7 @@ Open Parent Portal
 
                 {% if student.photo %}
                     <img
-                        src="{{ student.photo.url }}"
+                        src="{% url 'students:student_photo' student.id %}"
                         alt="Photo of {{ student.first_name }} {{ student.last_name }}"
                         class="w-64 rounded-lg"
                     >
