@@ -42,9 +42,9 @@ class RegisterStudentAPIView(APIView):
         )
 
         try:
-            result = RegistrationIntegrationService.register(
-                serializer.validated_data
-            )
+            payload = dict(serializer.validated_data)
+            payload["_base_url"] = request.build_absolute_uri("/")
+            result = RegistrationIntegrationService.register(payload)
         except ValueError as exc:
             return Response(
                 {

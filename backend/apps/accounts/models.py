@@ -24,5 +24,13 @@ class User(AbstractUser):
         null=True
     )
 
+    staff_must_change_password = models.BooleanField(
+        default=False,
+        help_text=(
+            "Require this staff user to change their "
+            "temporary password after login."
+        ),
+    )
+
     def __str__(self):
         return self.username

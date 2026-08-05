@@ -5,6 +5,7 @@ from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.attendance.models import Attendance
+from apps.notifications.onboarding import send_parent_onboarding_email
 from apps.students.models import (
     Announcement,
     Parent,
@@ -80,6 +81,18 @@ class RegistrationIntegrationService:
             student=student,
             relationship=data["relationship"],
         )
+
+        if parent_created and temporary_password:
+            base_url = data.get("_base_url") or data.get("base_url")
+
+            transaction.on_commit(
+                lambda: send_parent_onboarding_email(
+                    parent=parent,
+                    temporary_password=temporary_password,
+                    student=student,
+                    base_url=base_url,
+                )
+            )
 
         return {
             "student": student,

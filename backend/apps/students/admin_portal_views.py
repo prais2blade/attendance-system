@@ -2,10 +2,17 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.crypto import get_random_string
+from django.views.decorators.http import require_POST
 
 from apps.attendance.models import Attendance
+from apps.notifications.onboarding import (
+    send_parent_onboarding_email,
+    send_staff_onboarding_email,
+)
 
 from .admin_auth import admin_required, is_admin_portal_user
 from .admin_portal_forms import (
@@ -13,8 +20,9 @@ from .admin_portal_forms import (
     StaffUserCreateForm,
     StudentClassAssignmentForm,
     TeachingClassAdminForm,
+    generate_staff_temporary_password,
 )
-from .models import Assignment, Student, StudentParent, TeachingClass
+from .models import Assignment, Parent, Student, StudentParent, TeachingClass
 
 
 def admin_login(request):
@@ -78,6 +86,7 @@ def admin_dashboard(request):
 
     students = Student.objects.filter(is_active=True)
     classes = TeachingClass.objects.filter(is_active=True)
+    parents = Parent.objects.filter(is_active=True)
     staff = User.objects.filter(role=User.TEACHER)
     present_today = Attendance.objects.filter(date=today).values(
         "student",
@@ -101,12 +110,115 @@ def admin_dashboard(request):
             "summary": {
                 "students": students.count(),
                 "classes": classes.count(),
+                "parents": parents.count(),
                 "staff": staff.filter(is_active=True).count(),
                 "present_today": present_today,
                 "unassigned_students": unassigned_students,
             },
             "class_rows": class_rows,
             "recent_assignments": recent_assignments,
+        },
+    )
+
+
+@admin_required
+def admin_parent_list(request):
+    search = request.GET.get("search", "").strip()
+    parents = Parent.objects.annotate(
+        child_count=Count("students", distinct=True),
+    ).order_by("full_name")
+
+    if search:
+        parents = parents.filter(
+            Q(full_name__icontains=search)
+            | Q(phone_number__icontains=search)
+            | Q(whatsapp_number__icontains=search)
+            | Q(email__icontains=search)
+            | Q(students__student__student_id__icontains=search)
+            | Q(students__student__first_name__icontains=search)
+            | Q(students__student__last_name__icontains=search)
+        ).distinct()
+
+    return render(
+        request,
+        "admin_portal/parent_list.html",
+        {
+            "parents": parents,
+            "search": search,
+        },
+    )
+
+
+@admin_required
+def admin_parent_detail(request, parent_id):
+    parent = get_object_or_404(
+        Parent.objects.prefetch_related(
+            "students__student__teaching_class",
+        ),
+        pk=parent_id,
+    )
+
+    return render(
+        request,
+        "admin_portal/parent_detail.html",
+        {
+            "parent": parent,
+            "student_links": parent.students.all(),
+        },
+    )
+
+
+@admin_required
+@require_POST
+def admin_parent_reset_password(request, parent_id):
+    parent = get_object_or_404(
+        Parent,
+        pk=parent_id,
+    )
+    temporary_password = generate_parent_temporary_password()
+    parent.set_password(temporary_password)
+    parent.must_change_password = True
+    parent.save(
+        update_fields=[
+            "password",
+            "must_change_password",
+        ]
+    )
+    notification = send_parent_onboarding_email(
+        parent=parent,
+        temporary_password=temporary_password,
+        base_url=request.build_absolute_uri("/"),
+    )
+
+    if notification is None:
+        messages.warning(
+            request,
+            (
+                "Parent password was reset, but no email was sent "
+                "because no active email is available."
+            ),
+        )
+    elif notification.status == "sent":
+        messages.success(
+            request,
+            f"Login details were emailed to {parent.email}.",
+        )
+    else:
+        messages.warning(
+            request,
+            "Parent password was reset, but the email could not be sent.",
+        )
+
+    return render(
+        request,
+        "admin_portal/parent_onboarding.html",
+        {
+            "parent": parent,
+            "temporary_password": temporary_password,
+            "parent_login_url": request.build_absolute_uri(
+                reverse("parent_template_login")
+            ),
+            "email_notification": notification,
         },
     )
 
@@ -138,11 +250,41 @@ def admin_staff_create(request):
 
         if form.is_valid():
             user = form.save()
+            notification = send_staff_onboarding_email(
+                staff_user=user,
+                temporary_password=form.generated_password,
+                base_url=request.build_absolute_uri("/"),
+            )
             messages.success(
                 request,
                 f"Staff account {user.username} was created.",
             )
-            return redirect("school_admin:staff_list")
+            add_onboarding_email_message(
+                request=request,
+                notification=notification,
+                recipient_email=user.email,
+                missing_message=(
+                    "No onboarding email was sent because the staff "
+                    "account has no email address."
+                ),
+                sent_message=f"Login details were emailed to {user.email}.",
+                failed_message=(
+                    "The staff account was created, but the onboarding "
+                    "email could not be sent."
+                ),
+            )
+            return render(
+                request,
+                "admin_portal/staff_onboarding.html",
+                {
+                    "staff_user": user,
+                    "temporary_password": form.generated_password,
+                    "staff_login_url": request.build_absolute_uri(
+                        reverse("staff_login")
+                    ),
+                    "email_notification": notification,
+                },
+            )
 
     return render(
         request,
@@ -151,6 +293,92 @@ def admin_staff_create(request):
             "form": form,
         },
     )
+
+
+@admin_required
+@require_POST
+def admin_staff_reset_password(request, staff_id):
+    User = get_user_model()
+    staff_user = get_object_or_404(
+        User,
+        pk=staff_id,
+        role=User.TEACHER,
+    )
+    temporary_password = generate_staff_temporary_password()
+    staff_user.set_password(temporary_password)
+    staff_user.staff_must_change_password = True
+    staff_user.save(
+        update_fields=[
+            "password",
+            "staff_must_change_password",
+        ]
+    )
+
+    messages.success(
+        request,
+        f"Temporary password reset for {staff_user.username}.",
+    )
+    notification = send_staff_onboarding_email(
+        staff_user=staff_user,
+        temporary_password=temporary_password,
+        base_url=request.build_absolute_uri("/"),
+    )
+    add_onboarding_email_message(
+        request=request,
+        notification=notification,
+        recipient_email=staff_user.email,
+        missing_message=(
+            "No onboarding email was sent because the staff account "
+            "has no email address."
+        ),
+        sent_message=f"Login details were emailed to {staff_user.email}.",
+        failed_message=(
+            "The password was reset, but the onboarding email could "
+            "not be sent."
+        ),
+    )
+
+    return render(
+        request,
+        "admin_portal/staff_onboarding.html",
+        {
+            "staff_user": staff_user,
+            "temporary_password": temporary_password,
+            "staff_login_url": request.build_absolute_uri(
+                reverse("staff_login")
+            ),
+            "email_notification": notification,
+        },
+    )
+
+
+def generate_parent_temporary_password():
+    return f"Parent-{get_random_string(8)}-9"
+
+
+def add_onboarding_email_message(
+    request,
+    notification,
+    recipient_email,
+    missing_message,
+    sent_message,
+    failed_message,
+):
+    if notification is None or not recipient_email:
+        messages.warning(
+            request,
+            missing_message,
+        )
+    elif notification.status == "sent":
+        messages.success(
+            request,
+            sent_message,
+        )
+    else:
+        messages.warning(
+            request,
+            failed_message,
+        )
 
 
 @admin_required

@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.forms import PasswordChangeForm
 
 from .models import Announcement, Assignment, TeachingClass
 
@@ -30,6 +31,21 @@ class StaffLoginForm(forms.Form):
             }
         ),
     )
+
+
+class StaffPasswordChangeForm(PasswordChangeForm):
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(user, *args, **kwargs)
+
+        for field in self.fields.values():
+            field.widget.attrs.setdefault(
+                "class",
+                (
+                    "w-full rounded-lg border border-slate-300 px-4 py-3 "
+                    "outline-none focus:border-blue-600 focus:ring-2 "
+                    "focus:ring-blue-100"
+                ),
+            )
 
 
 class StaffAssignmentForm(forms.ModelForm):

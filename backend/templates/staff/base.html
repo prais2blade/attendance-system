@@ -35,6 +35,9 @@
                     <a href="{% url 'staff_announcements' %}" class="px-3 py-2 rounded-lg hover:bg-slate-800">
                         Announcements
                     </a>
+                    <a href="{% url 'staff_change_password' %}" class="px-3 py-2 rounded-lg hover:bg-slate-800">
+                        Password
+                    </a>
                     {% if request.user.is_superuser or request.user.role == "ADMIN" %}
                     <a href="{% url 'school_admin:dashboard' %}" class="px-3 py-2 rounded-lg hover:bg-slate-800">
                         Admin

@@ -3,6 +3,7 @@ from django.urls import path
 from .staff_views import (
     staff_announcements,
     staff_assignments,
+    staff_change_password,
     staff_class_detail,
     staff_dashboard,
     staff_login,
@@ -22,6 +23,11 @@ urlpatterns = [
         "logout/",
         staff_logout,
         name="staff_logout",
+    ),
+    path(
+        "change-password/",
+        staff_change_password,
+        name="staff_change_password",
     ),
     path(
         "",

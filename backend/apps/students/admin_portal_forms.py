@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.utils.crypto import get_random_string
 
 from .models import Student, TeachingClass
 
@@ -45,23 +46,7 @@ class AdminLoginForm(forms.Form):
 
 
 class StaffUserCreateForm(forms.ModelForm):
-    password = forms.CharField(
-        min_length=8,
-        widget=forms.PasswordInput(
-            attrs={
-                "autocomplete": "new-password",
-                "class": FIELD_CLASS,
-            }
-        ),
-    )
-    confirm_password = forms.CharField(
-        widget=forms.PasswordInput(
-            attrs={
-                "autocomplete": "new-password",
-                "class": FIELD_CLASS,
-            }
-        ),
-    )
+    generated_password = None
 
     class Meta:
         model = get_user_model()
@@ -78,25 +63,22 @@ class StaffUserCreateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         apply_widget_classes(self.fields)
 
-    def clean_confirm_password(self):
-        password = self.cleaned_data.get("password")
-        confirm_password = self.cleaned_data.get("confirm_password")
-
-        if password and confirm_password and password != confirm_password:
-            raise forms.ValidationError("Passwords do not match.")
-
-        return confirm_password
-
     def save(self, commit=True):
         user = super().save(commit=False)
         user.role = get_user_model().TEACHER
         user.is_staff = False
-        user.set_password(self.cleaned_data["password"])
+        user.staff_must_change_password = True
+        self.generated_password = generate_staff_temporary_password()
+        user.set_password(self.generated_password)
 
         if commit:
             user.save()
 
         return user
+
+
+def generate_staff_temporary_password():
+    return f"Staff-{get_random_string(8)}-9"
 
 
 class TeachingClassAdminForm(forms.ModelForm):

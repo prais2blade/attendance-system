@@ -7,8 +7,12 @@ from .admin_portal_views import (
     admin_dashboard,
     admin_login,
     admin_logout,
+    admin_parent_detail,
+    admin_parent_list,
+    admin_parent_reset_password,
     admin_staff_create,
     admin_staff_list,
+    admin_staff_reset_password,
     admin_student_assign_class,
     admin_student_list,
 )
@@ -33,6 +37,21 @@ urlpatterns = [
         name="dashboard",
     ),
     path(
+        "parents/",
+        admin_parent_list,
+        name="parent_list",
+    ),
+    path(
+        "parents/<int:parent_id>/",
+        admin_parent_detail,
+        name="parent_detail",
+    ),
+    path(
+        "parents/<int:parent_id>/reset-password/",
+        admin_parent_reset_password,
+        name="parent_reset_password",
+    ),
+    path(
         "staff/",
         admin_staff_list,
         name="staff_list",
@@ -41,6 +60,11 @@ urlpatterns = [
         "staff/create/",
         admin_staff_create,
         name="staff_create",
+    ),
+    path(
+        "staff/<int:staff_id>/reset-password/",
+        admin_staff_reset_password,
+        name="staff_reset_password",
     ),
     path(
         "classes/",

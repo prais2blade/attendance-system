@@ -30,7 +30,7 @@ Admin Dashboard
         </div>
     </div>
 
-    <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-6 gap-4">
         <div class="rounded-lg bg-white border border-slate-200 p-5">
             <p class="text-sm text-slate-500">Students</p>
             <p class="mt-2 text-3xl font-bold">{{ summary.students }}</p>
@@ -43,6 +43,10 @@ Admin Dashboard
             <p class="text-sm text-slate-500">Staff</p>
             <p class="mt-2 text-3xl font-bold">{{ summary.staff }}</p>
         </div>
+        <a href="{% url 'school_admin:parent_list' %}" class="rounded-lg bg-white border border-slate-200 p-5 hover:bg-slate-50">
+            <p class="text-sm text-slate-500">Parents</p>
+            <p class="mt-2 text-3xl font-bold">{{ summary.parents }}</p>
+        </a>
         <div class="rounded-lg bg-white border border-slate-200 p-5">
             <p class="text-sm text-slate-500">Present Today</p>
             <p class="mt-2 text-3xl font-bold text-emerald-700">{{ summary.present_today }}</p>

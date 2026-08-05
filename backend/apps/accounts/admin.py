@@ -13,6 +13,7 @@ class CustomUserAdmin(UserAdmin):
                 "fields": (
                     "role",
                     "phone_number",
+                    "staff_must_change_password",
                 ),
             },
         ),
@@ -24,6 +25,7 @@ class CustomUserAdmin(UserAdmin):
                 "fields": (
                     "role",
                     "phone_number",
+                    "staff_must_change_password",
                 ),
             },
         ),
@@ -34,11 +36,13 @@ class CustomUserAdmin(UserAdmin):
         "first_name",
         "last_name",
         "role",
+        "staff_must_change_password",
         "is_staff",
         "is_active",
     )
     list_filter = (
         "role",
+        "staff_must_change_password",
         "is_staff",
         "is_superuser",
         "is_active",

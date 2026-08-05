@@ -2,7 +2,12 @@ import json
 from functools import wraps
 
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import (
+    authenticate,
+    login,
+    logout,
+    update_session_auth_hash,
+)
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -24,6 +29,7 @@ from .staff_forms import (
     StaffAnnouncementForm,
     StaffAssignmentForm,
     StaffLoginForm,
+    StaffPasswordChangeForm,
     get_staff_classes,
 )
 
@@ -48,6 +54,14 @@ def staff_required(view_func):
         if not is_staff_portal_user(request.user):
             login_url = reverse("staff_login")
             return redirect(f"{login_url}?next={request.path}")
+
+        url_name = getattr(request.resolver_match, "url_name", "")
+
+        if (
+            getattr(request.user, "staff_must_change_password", False)
+            and url_name not in {"staff_change_password", "staff_logout"}
+        ):
+            return redirect("staff_change_password")
 
         return view_func(request, *args, **kwargs)
 
@@ -91,6 +105,9 @@ def staff_login(request):
             if user and is_staff_portal_user(user):
                 login(request, user)
 
+                if getattr(user, "staff_must_change_password", False):
+                    return redirect("staff_change_password")
+
                 if next_url and url_has_allowed_host_and_scheme(
                     next_url,
                     allowed_hosts={request.get_host()},
@@ -123,6 +140,40 @@ def staff_logout(request):
     )
 
     return redirect("staff_login")
+
+
+@staff_required
+def staff_change_password(request):
+    form = StaffPasswordChangeForm(request.user)
+
+    if request.method == "POST":
+        form = StaffPasswordChangeForm(
+            request.user,
+            request.POST,
+        )
+
+        if form.is_valid():
+            user = form.save()
+            user.staff_must_change_password = False
+            user.save(
+                update_fields=[
+                    "staff_must_change_password",
+                ]
+            )
+            update_session_auth_hash(request, user)
+            messages.success(
+                request,
+                "Your password has been updated.",
+            )
+            return redirect("staff_dashboard")
+
+    return render(
+        request,
+        "staff/change_password.html",
+        {
+            "form": form,
+        },
+    )
 
 
 @staff_required

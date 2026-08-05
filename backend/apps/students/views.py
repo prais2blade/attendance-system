@@ -178,6 +178,7 @@ def import_students(request):
                     "parent_whatsapp": parent_whatsapp or "",
                     "relationship": relationship,
                     "photo": None,
+                    "_base_url": request.build_absolute_uri("/"),
                 }
 
                 try:
@@ -249,6 +250,7 @@ def create_student(request):
                 "parent_whatsapp": form.cleaned_data.get("parent_whatsapp", ""),
                 "relationship": form.cleaned_data.get("relationship", "Guardian"),
                 "photo": request.FILES.get("photo") or form.cleaned_data.get("photo"),
+                "_base_url": request.build_absolute_uri("/"),
             }
 
             try:

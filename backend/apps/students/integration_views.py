@@ -24,9 +24,9 @@ class RegisterStudentAPIView(APIView):
             raise_exception=True
         )
 
-        result = RegistrationIntegrationService.register(
-            serializer.validated_data
-        )
+        payload = dict(serializer.validated_data)
+        payload["_base_url"] = request.build_absolute_uri("/")
+        result = RegistrationIntegrationService.register(payload)
 
         return Response({
 
