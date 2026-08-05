@@ -83,16 +83,31 @@ Open Parent Portal
 
             <div>
 
-                {% if student.qr_code %}
+                <img
+                    src="{% url 'students:student_qr_code' student.id %}"
+                    alt="QR code for {{ student.first_name }} {{ student.last_name }}"
+                    title="QR code for {{ student.first_name }} {{ student.last_name }}"
+                    class="w-64"
+                >
 
-                    <img
-                        src="{{ student.qr_code.url }}"
-                        alt="QR code for {{ student.first_name }} {{ student.last_name }}"
-                        title="QR code for {{ student.first_name }} {{ student.last_name }}"
-                        class="w-64"
+                <form
+                    method="POST"
+                    action="{% url 'students:regenerate_student_qr' student.id %}"
+                    class="mt-3"
+                >
+                    {% csrf_token %}
+                    <input
+                        type="hidden"
+                        name="next"
+                        value="{{ request.path }}"
                     >
-
-                {% endif %}
+                    <button
+                        type="submit"
+                        class="bg-gray-900 text-white px-4 py-2 rounded"
+                    >
+                        Regenerate QR Code
+                    </button>
+                </form>
 
             </div>
 

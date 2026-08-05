@@ -5,7 +5,7 @@ from io import BytesIO
 from django.conf import settings
 from django.contrib import messages
 from django.db.models import Q
-from django.http import FileResponse, HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -38,6 +38,7 @@ def student_detail(request, pk):
         Student,
         pk=pk,
     )
+    ensure_student_qr_code(student)
 
     attendance_history = Attendance.objects.filter(student=student).order_by("-date")
 
@@ -51,6 +52,36 @@ def student_detail(request, pk):
         "attendance/detail.html",
         context,
     )
+
+
+@admin_required
+def student_qr_code(request, pk):
+    student = get_object_or_404(
+        Student,
+        pk=pk,
+    )
+    ensure_student_qr_code(student)
+
+    try:
+        response = FileResponse(
+            student.qr_code.open("rb"),
+            content_type="image/png",
+        )
+    except (FileNotFoundError, OSError, ValueError):
+        regenerate_student_qr_code(student)
+
+        try:
+            response = FileResponse(
+                student.qr_code.open("rb"),
+                content_type="image/png",
+            )
+        except (FileNotFoundError, OSError, ValueError) as exc:
+            raise Http404("QR code is not available.") from exc
+
+    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+
+    return response
 
 
 @admin_required
