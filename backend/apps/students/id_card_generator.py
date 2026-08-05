@@ -440,26 +440,32 @@ def _draw_student_details(pdf, student):
         pdf.drawString(x, y - (index * line_gap), line)
 
     after_name_y = y - (len(lines) * line_gap) - 3
-    pdf.setFillColor(MUTED)
-    _draw_fit_text(
-        pdf,
+    class_lines, class_font_size = _fit_wrapped_text(
         _student_class_label(student).upper(),
-        x,
-        after_name_y,
-        max_width,
         "Helvetica-Bold",
-        7.9,
-        5.8,
+        max_width,
+        max_lines=3,
+        max_size=7.9,
+        min_size=4.8,
     )
+    class_line_gap = max(class_font_size * 1.05, 5.4)
+
+    pdf.setFillColor(MUTED)
+    pdf.setFont("Helvetica-Bold", class_font_size)
+
+    for index, line in enumerate(class_lines):
+        pdf.drawString(x, after_name_y - (index * class_line_gap), line)
+
+    after_class_y = after_name_y - (len(class_lines) * class_line_gap) - 7
 
     pdf.setFillColor(WHITE)
     pdf.setFont("Helvetica-Bold", 8.2)
-    pdf.drawString(x, after_name_y - 16, "ID:")
+    pdf.drawString(x, after_class_y, "ID:")
     _draw_fit_text(
         pdf,
         student.student_id,
         x + 16,
-        after_name_y - 16,
+        after_class_y,
         max_width - 16,
         "Helvetica-Bold",
         10,
