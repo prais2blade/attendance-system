@@ -193,6 +193,11 @@ PUBLIC_BASE_URL = os.getenv(
     os.getenv("SITE_URL", ""),
 ).rstrip("/")
 
+CODECAMP_BACK_OFFICE_URL = os.getenv(
+    "CODECAMP_BACK_OFFICE_URL",
+    "https://codecamp.com.ng/back-office/",
+).strip()
+
 EMAIL_BACKEND = os.getenv(
     "EMAIL_BACKEND",
     "django.core.mail.backends.smtp.EmailBackend",

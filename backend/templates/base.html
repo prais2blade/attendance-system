@@ -8,21 +8,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- PWA -->
-
-    <meta name="theme-color" content="#0f172a">
-
-    <meta name="msapplication-navbutton-color" content="#0f172a">
-
-    <meta name="apple-mobile-web-app-capable" content="yes">
-
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-    <meta name="apple-mobile-web-app-title" content="Attendance System">
-
-    <link rel="manifest" href="{% static 'manifest.json' %}">
-
-    <link rel="apple-touch-icon" href="{% static 'icons/icon-192.png' %}">
+    {% include "components/pwa_head.html" %}
 
     <!-- Title -->
 
@@ -85,49 +71,7 @@
     {% block extra_js %}
     {% endblock %}
 
-    <!-- Service Worker -->
-
-    <script>
-
-        if ("serviceWorker" in navigator) {
-
-            window.addEventListener(
-
-                "load",
-
-                function () {
-
-                    navigator.serviceWorker
-
-                        .register(
-                            "{% static 'service-worker.js' %}"
-                        )
-
-                        .then(function (registration) {
-
-                            console.log(
-                                "Service Worker Registered:",
-                                registration.scope
-                            );
-
-                        })
-
-                        .catch(function (error) {
-
-                            console.log(
-                                "Service Worker Registration Failed:",
-                                error
-                            );
-
-                        });
-
-                }
-
-            );
-
-        }
-
-    </script>
+    {% include "components/pwa_script.html" %}
     <script src="{% static 'js/offline-attendance.js' %}"></script>
     <div id="sync-toast"
         class="hidden fixed bottom-5 right-5 bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg z-50">

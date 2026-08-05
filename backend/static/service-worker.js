@@ -1,68 +1,80 @@
-const CACHE_NAME = "attendance-v1";
+const CACHE_NAME = "attendance-v2";
 
-const urlsToCache = [
-
-    "/",
-
-    "/students/",
-
-    "/api/attendance/dashboard/",
-
-    "/api/attendance/reports/"
-
+const STATIC_ASSETS = [
+    "/static/manifest.json",
+    "/static/icons/icon-192.png",
+    "/static/icons/icon-512.png",
+    "/static/js/offline-attendance.js",
+    "/static/images/codecamp-logo.png"
 ];
 
-self.addEventListener(
+self.addEventListener("install", event => {
+    event.waitUntil(
+        caches
+            .open(CACHE_NAME)
+            .then(cache => cache.addAll(STATIC_ASSETS))
+            .then(() => self.skipWaiting())
+    );
+});
 
-    "install",
-
-    event => {
-
-        event.waitUntil(
-
-            caches.open(CACHE_NAME)
-
-            .then(cache => {
-
-                return cache.addAll(
-                    urlsToCache
+self.addEventListener("activate", event => {
+    event.waitUntil(
+        caches
+            .keys()
+            .then(cacheNames => {
+                return Promise.all(
+                    cacheNames
+                        .filter(cacheName => cacheName !== CACHE_NAME)
+                        .map(cacheName => caches.delete(cacheName))
                 );
-
             })
+            .then(() => self.clients.claim())
+    );
+});
 
-        );
+self.addEventListener("fetch", event => {
+    const request = event.request;
 
+    if (request.method !== "GET") {
+        return;
     }
 
-);
+    const url = new URL(request.url);
 
-self.addEventListener(
-
-    "fetch",
-
-    event => {
-
-        event.respondWith(
-
-            caches.match(
-                event.request
-            )
-
-            .then(response => {
-
-                return (
-                    response ||
-
-                    fetch(
-                        event.request
-                    )
-
-                );
-
-            })
-
-        );
-
+    if (url.origin !== self.location.origin) {
+        return;
     }
 
-);
+    if (url.pathname.startsWith("/static/")) {
+        event.respondWith(cacheFirst(request));
+        return;
+    }
+
+    if (request.mode === "navigate") {
+        event.respondWith(networkFirst(request));
+    }
+});
+
+function cacheFirst(request) {
+    return caches.match(request).then(cachedResponse => {
+        if (cachedResponse) {
+            return cachedResponse;
+        }
+
+        return fetch(request).then(networkResponse => {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+            return networkResponse;
+        });
+    });
+}
+
+function networkFirst(request) {
+    return fetch(request)
+        .then(networkResponse => {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+            return networkResponse;
+        })
+        .catch(() => caches.match(request));
+}

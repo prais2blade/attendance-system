@@ -61,7 +61,7 @@ Parent Dashboard
     </div>
 
     {% if children %}
-    <div class="mt-8 grid lg:grid-cols-2 gap-5">
+    <div id="children" class="mt-8 grid lg:grid-cols-2 gap-5 scroll-mt-20">
         {% for item in children %}
         <article class="rounded-lg bg-white border border-slate-200 shadow-sm overflow-hidden">
             <div class="p-5">
@@ -167,7 +167,7 @@ Parent Dashboard
     {% endif %}
 
     <div class="mt-8 grid lg:grid-cols-2 gap-5">
-        <section class="rounded-lg bg-white border border-slate-200 shadow-sm">
+        <section id="assignments" class="rounded-lg bg-white border border-slate-200 shadow-sm scroll-mt-20">
             <div class="border-b border-slate-200 px-5 py-4">
                 <h2 class="text-lg font-bold text-slate-950">
                     Assignments
@@ -206,7 +206,7 @@ Parent Dashboard
             </div>
         </section>
 
-        <section class="rounded-lg bg-white border border-slate-200 shadow-sm">
+        <section id="announcements" class="rounded-lg bg-white border border-slate-200 shadow-sm scroll-mt-20">
             <div class="border-b border-slate-200 px-5 py-4">
                 <h2 class="text-lg font-bold text-slate-950">
                     Announcements

@@ -29,6 +29,16 @@
                 <a href="{% url 'reports_dashboard' %}" class="hover:text-blue-300">
                     Reports
                 </a>
+                {% if codecamp_back_office_url %}
+                <a
+                    href="{{ codecamp_back_office_url }}"
+                    target="_blank"
+                    rel="noopener"
+                    class="hover:text-blue-300"
+                >
+                    CodeCamp Back Office
+                </a>
+                {% endif %}
                 <div class="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
 
                     Offline Queue:

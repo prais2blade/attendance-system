@@ -9,6 +9,7 @@
         Foundation Portal
         {% endblock %}
     </title>
+    {% include "components/pwa_head.html" %}
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -52,6 +53,8 @@
         {% block content %}
         {% endblock %}
     </main>
+
+    {% include "components/pwa_script.html" %}
 
 </body>
 

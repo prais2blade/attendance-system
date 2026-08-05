@@ -9,6 +9,7 @@
         School Admin
         {% endblock %}
     </title>
+    {% include "components/pwa_head.html" %}
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -48,6 +49,16 @@
                     <a href="{% url 'staff_dashboard' %}" class="px-3 py-2 rounded-lg hover:bg-emerald-900">
                         Staff Portal
                     </a>
+                    {% if codecamp_back_office_url %}
+                    <a
+                        href="{{ codecamp_back_office_url }}"
+                        target="_blank"
+                        rel="noopener"
+                        class="px-3 py-2 rounded-lg border border-emerald-700 text-emerald-50 hover:bg-emerald-900"
+                    >
+                        CodeCamp Back Office
+                    </a>
+                    {% endif %}
                     <a href="{% url 'school_admin:logout' %}" class="px-3 py-2 rounded-lg bg-white text-emerald-950 hover:bg-emerald-100">
                         Logout
                     </a>
@@ -72,6 +83,8 @@
         {% block content %}
         {% endblock %}
     </main>
+
+    {% include "components/pwa_script.html" %}
 
 </body>
 
