@@ -75,6 +75,9 @@ Students
                                 <a href="{% url 'students:edit_student' student.id %}" class="font-semibold text-slate-700 hover:text-slate-950">
                                     Edit
                                 </a>
+                                <a href="{% url 'students:delete_student' student.id %}" class="font-semibold text-red-700 hover:text-red-900">
+                                    Delete
+                                </a>
                             </div>
                         </td>
                     </tr>

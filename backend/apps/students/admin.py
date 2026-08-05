@@ -4,8 +4,11 @@ from django.utils.html import format_html
 from .models import (
     Announcement,
     Assignment,
+    Foundation,
     Parent,
+    PerformanceRecord,
     Student,
+    StudentFoundation,
     StudentParent,
     TeachingClass,
 )
@@ -206,6 +209,84 @@ class AssignmentAdmin(admin.ModelAdmin):
     search_fields = (
         "title",
         "description",
+    )
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+    )
+
+
+@admin.register(Foundation)
+class FoundationAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "contact_person",
+        "email",
+        "is_active",
+    )
+    list_filter = (
+        "is_active",
+        "must_change_password",
+    )
+    search_fields = (
+        "name",
+        "contact_person",
+        "email",
+        "phone_number",
+    )
+    readonly_fields = (
+        "last_login_at",
+        "last_password_change",
+        "created_at",
+        "updated_at",
+    )
+
+
+@admin.register(StudentFoundation)
+class StudentFoundationAdmin(admin.ModelAdmin):
+    list_display = (
+        "foundation",
+        "student",
+        "is_active",
+        "start_date",
+        "end_date",
+    )
+    list_filter = (
+        "foundation",
+        "is_active",
+    )
+    search_fields = (
+        "foundation__name",
+        "student__student_id",
+        "student__first_name",
+        "student__last_name",
+    )
+
+
+@admin.register(PerformanceRecord)
+class PerformanceRecordAdmin(admin.ModelAdmin):
+    list_display = (
+        "student",
+        "title",
+        "subject",
+        "score",
+        "max_score",
+        "grade",
+        "visible_to_foundations",
+        "recorded_at",
+    )
+    list_filter = (
+        "visible_to_foundations",
+        "teaching_class",
+        "recorded_at",
+    )
+    search_fields = (
+        "student__student_id",
+        "student__first_name",
+        "student__last_name",
+        "title",
+        "subject",
+        "term",
     )
     readonly_fields = (
         "created_at",

@@ -24,13 +24,16 @@ Admin Dashboard
             <a href="{% url 'school_admin:class_create' %}" class="rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-950">
                 Create Class
             </a>
+            <a href="{% url 'school_admin:foundation_create' %}" class="rounded-lg bg-white border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-slate-50">
+                Add Foundation
+            </a>
             <a href="{% url 'students:create_student' %}" class="rounded-lg bg-white border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-slate-50">
                 Add Student
             </a>
         </div>
     </div>
 
-    <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-6 gap-4">
+    <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-7 gap-4">
         <div class="rounded-lg bg-white border border-slate-200 p-5">
             <p class="text-sm text-slate-500">Students</p>
             <p class="mt-2 text-3xl font-bold">{{ summary.students }}</p>
@@ -46,6 +49,10 @@ Admin Dashboard
         <a href="{% url 'school_admin:parent_list' %}" class="rounded-lg bg-white border border-slate-200 p-5 hover:bg-slate-50">
             <p class="text-sm text-slate-500">Parents</p>
             <p class="mt-2 text-3xl font-bold">{{ summary.parents }}</p>
+        </a>
+        <a href="{% url 'school_admin:foundation_list' %}" class="rounded-lg bg-white border border-slate-200 p-5 hover:bg-slate-50">
+            <p class="text-sm text-slate-500">Foundations</p>
+            <p class="mt-2 text-3xl font-bold">{{ summary.foundations }}</p>
         </a>
         <div class="rounded-lg bg-white border border-slate-200 p-5">
             <p class="text-sm text-slate-500">Present Today</p>

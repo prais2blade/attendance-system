@@ -3,7 +3,14 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils.crypto import get_random_string
 
-from .models import Student, TeachingClass
+from .models import (
+    Foundation,
+    Parent,
+    PerformanceRecord,
+    Student,
+    StudentFoundation,
+    TeachingClass,
+)
 
 
 FIELD_CLASS = (
@@ -77,8 +84,85 @@ class StaffUserCreateForm(forms.ModelForm):
         return user
 
 
+class StaffUserEditForm(forms.ModelForm):
+    class Meta:
+        model = get_user_model()
+        fields = [
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "phone_number",
+            "is_active",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        apply_widget_classes(self.fields)
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.role = get_user_model().TEACHER
+        user.is_staff = False
+
+        if commit:
+            user.save()
+
+        return user
+
+
 def generate_staff_temporary_password():
     return f"Staff-{get_random_string(8)}-9"
+
+
+class FoundationCreateForm(forms.ModelForm):
+    generated_password = None
+
+    class Meta:
+        model = Foundation
+        fields = [
+            "name",
+            "contact_person",
+            "email",
+            "phone_number",
+            "is_active",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        apply_widget_classes(self.fields)
+
+    def save(self, commit=True):
+        foundation = super().save(commit=False)
+        foundation.must_change_password = True
+        self.generated_password = generate_foundation_temporary_password()
+        foundation.set_password(self.generated_password)
+
+        if commit:
+            foundation.save()
+
+        return foundation
+
+
+class FoundationEditForm(forms.ModelForm):
+    class Meta:
+        model = Foundation
+        fields = [
+            "name",
+            "contact_person",
+            "email",
+            "phone_number",
+            "must_change_password",
+            "is_active",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        apply_widget_classes(self.fields)
+
+
+def generate_foundation_temporary_password():
+    return f"Foundation-{get_random_string(8)}-9"
 
 
 class TeachingClassAdminForm(forms.ModelForm):
@@ -146,3 +230,106 @@ class StudentClassAssignmentForm(forms.ModelForm):
             student.save()
 
         return student
+
+
+class FoundationStudentForm(forms.ModelForm):
+    class Meta:
+        model = StudentFoundation
+        fields = [
+            "student",
+            "sponsorship_note",
+            "start_date",
+            "end_date",
+            "is_active",
+        ]
+        widgets = {
+            "start_date": forms.DateInput(
+                attrs={
+                    "type": "date",
+                }
+            ),
+            "end_date": forms.DateInput(
+                attrs={
+                    "type": "date",
+                }
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.foundation = kwargs.pop("foundation")
+        super().__init__(*args, **kwargs)
+        self.fields["student"].queryset = Student.objects.filter(
+            is_active=True,
+        ).order_by("first_name", "last_name", "student_id")
+        apply_widget_classes(self.fields)
+
+    def save(self, commit=True):
+        link = super().save(commit=False)
+        link.foundation = self.foundation
+
+        if commit:
+            link.save()
+
+        return link
+
+
+class ParentAdminForm(forms.ModelForm):
+    class Meta:
+        model = Parent
+        fields = [
+            "title",
+            "full_name",
+            "phone_number",
+            "whatsapp_number",
+            "email",
+            "receive_email",
+            "receive_whatsapp",
+            "must_change_password",
+            "is_active",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        apply_widget_classes(self.fields)
+
+
+class PerformanceRecordForm(forms.ModelForm):
+    class Meta:
+        model = PerformanceRecord
+        fields = [
+            "student",
+            "title",
+            "subject",
+            "term",
+            "score",
+            "max_score",
+            "grade",
+            "recorded_at",
+            "notes",
+            "attachment",
+            "visible_to_foundations",
+        ]
+        widgets = {
+            "recorded_at": forms.DateInput(
+                attrs={
+                    "type": "date",
+                }
+            ),
+            "notes": forms.Textarea(
+                attrs={
+                    "rows": 5,
+                }
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        initial_student = kwargs.pop("initial_student", None)
+        super().__init__(*args, **kwargs)
+        self.fields["student"].queryset = Student.objects.filter(
+            is_active=True,
+        ).order_by("first_name", "last_name", "student_id")
+
+        if initial_student:
+            self.fields["student"].initial = initial_student
+
+        apply_widget_classes(self.fields)

@@ -53,7 +53,15 @@ Staff
                             {% endif %}
                         </td>
                         <td class="p-4">
-                            <form method="POST" action="{% url 'school_admin:staff_reset_password' member.id %}">
+                            <div class="flex flex-wrap gap-3">
+                                <a href="{% url 'school_admin:staff_edit' member.id %}" class="font-semibold text-slate-700 hover:text-slate-950">
+                                    Edit
+                                </a>
+                                <a href="{% url 'school_admin:staff_delete' member.id %}" class="font-semibold text-red-700 hover:text-red-900">
+                                    Delete
+                                </a>
+                            </div>
+                            <form method="POST" action="{% url 'school_admin:staff_reset_password' member.id %}" class="mt-2">
                                 {% csrf_token %}
                                 <button type="submit" class="font-semibold text-emerald-800 hover:text-emerald-950">
                                     Reset Password

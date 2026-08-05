@@ -320,6 +320,164 @@ class StudentParent(models.Model):
         )
 
 
+class Foundation(models.Model):
+    name = models.CharField(
+        max_length=255,
+        unique=True,
+    )
+
+    contact_person = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    email = models.EmailField(
+        unique=True,
+    )
+
+    phone_number = models.CharField(
+        max_length=20,
+        blank=True,
+    )
+
+    password = models.CharField(
+        max_length=255,
+    )
+
+    must_change_password = models.BooleanField(
+        default=True,
+    )
+
+    last_login_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    last_password_change = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "name",
+        ]
+        indexes = [
+            models.Index(
+                fields=[
+                    "email",
+                ]
+            ),
+            models.Index(
+                fields=[
+                    "name",
+                ]
+            ),
+        ]
+
+    def set_password(self, raw_password):
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.password)
+
+    def update_last_login(self):
+        from django.utils import timezone
+
+        self.last_login_at = timezone.now()
+        self.save(
+            update_fields=[
+                "last_login_at",
+            ]
+        )
+
+    def mark_password_changed(self):
+        from django.utils import timezone
+
+        self.must_change_password = False
+        self.last_password_change = timezone.now()
+        self.save(
+            update_fields=[
+                "must_change_password",
+                "last_password_change",
+            ]
+        )
+
+    def __str__(self):
+        return self.name
+
+
+class StudentFoundation(models.Model):
+    foundation = models.ForeignKey(
+        Foundation,
+        on_delete=models.CASCADE,
+        related_name="student_links",
+    )
+
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE,
+        related_name="foundation_links",
+    )
+
+    sponsorship_note = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    start_date = models.DateField(
+        null=True,
+        blank=True,
+    )
+
+    end_date = models.DateField(
+        null=True,
+        blank=True,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "student__first_name",
+            "student__last_name",
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "foundation",
+                    "student",
+                ],
+                name="unique_foundation_student_link",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.foundation} - {self.student}"
+
+
 
 class Announcement(models.Model):
     """
@@ -572,3 +730,109 @@ class Assignment(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class PerformanceRecord(models.Model):
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE,
+        related_name="performance_records",
+    )
+
+    teaching_class = models.ForeignKey(
+        TeachingClass,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="performance_records",
+    )
+
+    title = models.CharField(
+        max_length=200,
+    )
+
+    subject = models.CharField(
+        max_length=120,
+        blank=True,
+    )
+
+    term = models.CharField(
+        max_length=120,
+        blank=True,
+    )
+
+    score = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
+    max_score = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
+    grade = models.CharField(
+        max_length=30,
+        blank=True,
+    )
+
+    notes = models.TextField(
+        blank=True,
+    )
+
+    attachment = models.FileField(
+        upload_to="performance/",
+        null=True,
+        blank=True,
+    )
+
+    visible_to_foundations = models.BooleanField(
+        default=True,
+    )
+
+    recorded_at = models.DateField(
+        null=True,
+        blank=True,
+    )
+
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="uploaded_performance_records",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-recorded_at",
+            "-created_at",
+        ]
+
+    @property
+    def percentage(self):
+        if self.score is None or not self.max_score:
+            return None
+
+        return round((self.score / self.max_score) * 100, 2)
+
+    def save(self, *args, **kwargs):
+        if self.student and self.student.teaching_class_id:
+            self.teaching_class = self.student.teaching_class
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.student} - {self.title}"

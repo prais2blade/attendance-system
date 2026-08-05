@@ -19,6 +19,12 @@ Parent Detail
                     Send Login Details
                 </button>
             </form>
+            <a href="{% url 'school_admin:parent_edit' parent.id %}" class="inline-flex justify-center rounded-lg bg-slate-900 px-5 py-3 font-semibold text-white hover:bg-slate-950">
+                Edit Parent
+            </a>
+            <a href="{% url 'school_admin:parent_delete' parent.id %}" class="inline-flex justify-center rounded-lg bg-red-700 px-5 py-3 font-semibold text-white hover:bg-red-800">
+                Delete Parent
+            </a>
             <a href="{% url 'school_admin:parent_list' %}" class="inline-flex justify-center rounded-lg border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-900 hover:bg-slate-50">
                 Back To Parents
             </a>

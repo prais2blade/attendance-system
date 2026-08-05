@@ -70,6 +70,36 @@ def send_staff_onboarding_email(staff_user, temporary_password, base_url=None):
     )
 
 
+def send_foundation_onboarding_email(foundation, temporary_password, base_url=None):
+    if not foundation.email:
+        return None
+
+    organization_name = get_organization_name()
+    login_url = build_url("foundation_login", base_url)
+    dashboard_url = build_url("foundation_dashboard", base_url)
+    password_url = build_url("foundation_change_password", base_url)
+
+    recipient_name = foundation.contact_person or foundation.name
+    message = (
+        f"Hello {recipient_name},\n\n"
+        f"Your {organization_name} foundation sponsor portal account is ready.\n\n"
+        f"Login link: {login_url}\n"
+        f"Dashboard link: {dashboard_url}\n"
+        f"Email: {foundation.email}\n"
+        f"Temporary password: {temporary_password}\n\n"
+        f"You must change this password before using the sponsor dashboard.\n"
+        f"Password page: {password_url}\n\n"
+        "This portal shows only students assigned to your foundation."
+    )
+
+    return create_notification(
+        recipient=foundation.email,
+        channel="email",
+        subject=f"{organization_name} Foundation Portal Login Details",
+        message=message,
+    )
+
+
 def build_url(route_name, base_url=None):
     path = reverse(route_name)
     base = (base_url or settings.PUBLIC_BASE_URL or "").rstrip("/")

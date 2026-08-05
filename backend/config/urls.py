@@ -12,6 +12,7 @@ urlpatterns = [
     path("students/", include("apps.students.urls")),
     path("parent/", include("apps.students.parent_template_urls")),
     path("staff/", include("apps.students.staff_urls")),
+    path("foundation/", include("apps.students.foundation_urls")),
 
     # Attendance APIs
     path("api/attendance/", include("apps.attendance.urls")),
