@@ -19,8 +19,11 @@ from apps.attendance.models import Attendance
 from .admin_auth import admin_required
 from .forms import StudentForm, StudentImportForm
 from .id_card_generator import (
+    BULK_ID_CARD_PAGE_SIZE,
+    ID_CARDS_PER_BULK_PAGE,
     ID_CARD_SIZE,
     draw_student_id_card,
+    get_bulk_id_card_position,
     get_id_card_settings,
 )
 from .models import Student, StudentParent
@@ -551,19 +554,22 @@ def bulk_id_cards(request):
     buffer = BytesIO()
     pdf = canvas.Canvas(
         buffer,
-        pagesize=ID_CARD_SIZE,
+        pagesize=BULK_ID_CARD_PAGE_SIZE,
     )
     id_card_settings = get_id_card_settings()
 
     for index, student in enumerate(students):
-        if index:
+        if index and index % ID_CARDS_PER_BULK_PAGE == 0:
             pdf.showPage()
 
-        pdf.setPageSize(ID_CARD_SIZE)
+        pdf.setPageSize(BULK_ID_CARD_PAGE_SIZE)
+        x, y = get_bulk_id_card_position(index)
         draw_student_id_card(
             pdf,
             student,
             id_card_settings,
+            x=x,
+            y=y,
         )
 
     pdf.save()
@@ -572,7 +578,7 @@ def bulk_id_cards(request):
     return FileResponse(
         buffer,
         as_attachment=True,
-        filename="student_id_cards.pdf",
+        filename="student_id_cards_a4.pdf",
     )
 
 

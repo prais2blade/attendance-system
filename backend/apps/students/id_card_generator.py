@@ -6,6 +6,7 @@ from django.conf import settings
 from django.utils import timezone
 from PIL import Image, ImageOps
 from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
@@ -15,9 +16,16 @@ from apps.settings_app.models import SystemSettings
 from .qr_utils import ensure_student_qr_code, get_existing_file_path
 
 
+A4_LANDSCAPE_SIZE = landscape(A4)
+ID_CARD_SIZE = (
+    A4_LANDSCAPE_SIZE[0] / 2,
+    A4_LANDSCAPE_SIZE[1] / 2,
+)
+BULK_ID_CARD_PAGE_SIZE = A4_LANDSCAPE_SIZE
+ID_CARDS_PER_BULK_PAGE = 4
+
 CARD_WIDTH = 85.6 * mm
 CARD_HEIGHT = 54 * mm
-ID_CARD_SIZE = (CARD_WIDTH, CARD_HEIGHT)
 
 CARD_MARGIN = 4
 CARD_X = CARD_MARGIN
@@ -44,21 +52,53 @@ def get_id_card_settings():
     return SystemSettings.objects.first()
 
 
-def draw_student_id_card(pdf, student, system_settings=None):
+def draw_student_id_card(
+    pdf,
+    student,
+    system_settings=None,
+    x=0,
+    y=0,
+    width=None,
+    height=None,
+):
     """
-    Draw one premium landscape student ID card on the active ReportLab page.
+    Draw one premium landscape student ID card in an A6 print slot.
     """
 
     system_settings = system_settings or get_id_card_settings()
     organization_name = _organization_name(system_settings)
+    width = width or ID_CARD_SIZE[0]
+    height = height or ID_CARD_SIZE[1]
 
-    _draw_background(pdf, student)
-    _draw_brand(pdf, organization_name, system_settings)
-    _draw_photo(pdf, student)
-    _draw_student_details(pdf, student)
-    _draw_qr_code(pdf, student)
-    _draw_status(pdf, student)
-    _draw_footer(pdf, organization_name)
+    pdf.saveState()
+
+    try:
+        pdf.translate(x, y)
+        pdf.scale(
+            width / CARD_WIDTH,
+            height / CARD_HEIGHT,
+        )
+
+        _draw_background(pdf, student)
+        _draw_brand(pdf, organization_name, system_settings)
+        _draw_photo(pdf, student)
+        _draw_student_details(pdf, student)
+        _draw_qr_code(pdf, student)
+        _draw_status(pdf, student)
+        _draw_footer(pdf, organization_name)
+    finally:
+        pdf.restoreState()
+
+
+def get_bulk_id_card_position(index):
+    slot_index = index % ID_CARDS_PER_BULK_PAGE
+    column = slot_index % 2
+    row = 1 - (slot_index // 2)
+
+    return (
+        column * ID_CARD_SIZE[0],
+        row * ID_CARD_SIZE[1],
+    )
 
 
 def _organization_name(system_settings):
