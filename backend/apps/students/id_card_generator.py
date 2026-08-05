@@ -6,7 +6,7 @@ from django.conf import settings
 from django.utils import timezone
 from PIL import Image, ImageOps
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
@@ -16,14 +16,13 @@ from apps.settings_app.models import SystemSettings
 from .qr_utils import ensure_student_qr_code, get_existing_file_path
 
 
-A4_LANDSCAPE_SIZE = landscape(A4)
 ID_CARD_SIZE = (
-    99 * mm,
     105 * mm,
+    99 * mm,
 )
-BULK_ID_CARD_PAGE_SIZE = A4_LANDSCAPE_SIZE
-BULK_ID_CARD_COLUMNS = 3
-BULK_ID_CARD_ROWS = 2
+BULK_ID_CARD_PAGE_SIZE = A4
+BULK_ID_CARD_COLUMNS = 2
+BULK_ID_CARD_ROWS = 3
 ID_CARDS_PER_BULK_PAGE = BULK_ID_CARD_COLUMNS * BULK_ID_CARD_ROWS
 
 CARD_WIDTH = ID_CARD_SIZE[0]
@@ -64,7 +63,7 @@ def draw_student_id_card(
     height=None,
 ):
     """
-    Draw one premium student ID card in a 99mm x 105mm print slot.
+    Draw one premium student ID card in a 105mm x 99mm landscape print slot.
     """
 
     system_settings = system_settings or get_id_card_settings()
