@@ -195,7 +195,7 @@ PUBLIC_BASE_URL = os.getenv(
 
 CODECAMP_BACK_OFFICE_URL = os.getenv(
     "CODECAMP_BACK_OFFICE_URL",
-    "https://codecamp.com.ng/back-office/",
+    "https://codecamp.com.ng/backoffice/",
 ).strip()
 
 EMAIL_BACKEND = os.getenv(
