@@ -8,18 +8,27 @@ from django.db.models import Q
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
-from reportlab.lib import colors
-from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
 from apps.attendance.models import Attendance
 
 from .admin_auth import admin_required
 from .forms import StudentForm, StudentImportForm
+from .id_card_generator import (
+    ID_CARD_SIZE,
+    draw_student_id_card,
+    get_id_card_settings,
+)
 from .models import Student, StudentParent
+from .qr_utils import (
+    ensure_student_qr_code,
+    get_existing_file_path,
+    regenerate_student_qr_code,
+)
 from .services import RegistrationIntegrationService
 
 
@@ -52,39 +61,15 @@ def student_id_card(request, pk):
     )
 
     buffer = BytesIO()
-
     pdf = canvas.Canvas(
         buffer,
-        pagesize=(85.6 * mm, 54 * mm),
+        pagesize=ID_CARD_SIZE,
     )
-
-    pdf.setStrokeColor(colors.black)
-    pdf.rect(5, 5, 230, 140)
-
-    pdf.setFont("Helvetica-Bold", 12)
-    pdf.drawString(15, 130, "CODECAMP INNOVATION HUB")
-
-    pdf.setFont("Helvetica", 9)
-    pdf.drawString(15, 110, f"Name: {student.first_name} {student.last_name}")
-    pdf.drawString(15, 95, f"ID: {student.student_id}")
-
-    if student.qr_code:
-        pdf.drawImage(
-            student.qr_code.path,
-            160,
-            40,
-            width=60,
-            height=60,
-        )
-
-    if student.photo:
-        pdf.drawImage(
-            student.photo.path,
-            15,
-            40,
-            width=50,
-            height=50,
-        )
+    draw_student_id_card(
+        pdf,
+        student,
+        get_id_card_settings(),
+    )
 
     pdf.save()
     buffer.seek(0)
@@ -417,6 +402,58 @@ def delete_student(request, pk):
 
 
 @admin_required
+@require_POST
+def regenerate_student_qr(request, pk):
+    student = get_object_or_404(
+        Student,
+        pk=pk,
+    )
+    regenerate_student_qr_code(student)
+    messages.success(
+        request,
+        f"QR code regenerated for {student.full_name}.",
+    )
+
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER")
+
+    if next_url:
+        return redirect(next_url)
+
+    return redirect(
+        "students:student_detail",
+        pk=student.pk,
+    )
+
+
+@admin_required
+@require_POST
+def regenerate_missing_qr_codes(request):
+    regenerated_count = 0
+
+    for student in Student.objects.all().order_by("id"):
+        if ensure_student_qr_code(student):
+            regenerated_count += 1
+
+    if regenerated_count:
+        messages.success(
+            request,
+            f"{regenerated_count} missing QR code(s) regenerated.",
+        )
+    else:
+        messages.success(
+            request,
+            "All students already have QR codes.",
+        )
+
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER")
+
+    if next_url:
+        return redirect(next_url)
+
+    return redirect("school_admin:student_list")
+
+
+@admin_required
 def bulk_qr_download(request):
     if request.method != "POST":
         return redirect("students:student_list")
@@ -441,9 +478,12 @@ def bulk_qr_download(request):
         compression=zipfile.ZIP_DEFLATED,
     ) as archive:
         for student in students:
-            if student.qr_code and os.path.exists(student.qr_code.path):
+            ensure_student_qr_code(student)
+            qr_code_path = get_existing_file_path(student.qr_code)
+
+            if qr_code_path and os.path.exists(qr_code_path):
                 archive.write(
-                    student.qr_code.path,
+                    qr_code_path,
                     arcname=f"{student.student_id}.png",
                 )
 
@@ -478,39 +518,22 @@ def bulk_id_cards(request):
     students = Student.objects.filter(id__in=student_ids).order_by("student_id")
 
     buffer = BytesIO()
-    pdf = canvas.Canvas(buffer)
+    pdf = canvas.Canvas(
+        buffer,
+        pagesize=ID_CARD_SIZE,
+    )
+    id_card_settings = get_id_card_settings()
 
-    for student in students:
-        pdf.setPageSize((85.6 * mm, 54 * mm))
-        pdf.setStrokeColor(colors.black)
-        pdf.rect(5, 5, 230, 140)
+    for index, student in enumerate(students):
+        if index:
+            pdf.showPage()
 
-        pdf.setFont("Helvetica-Bold", 12)
-        pdf.drawString(15, 130, "CODECAMP INNOVATION HUB")
-
-        pdf.setFont("Helvetica", 9)
-        pdf.drawString(15, 110, f"Name: {student.first_name} {student.last_name}")
-        pdf.drawString(15, 95, f"ID: {student.student_id}")
-
-        if student.qr_code and os.path.exists(student.qr_code.path):
-            pdf.drawImage(
-                student.qr_code.path,
-                160,
-                40,
-                width=60,
-                height=60,
-            )
-
-        if student.photo and os.path.exists(student.photo.path):
-            pdf.drawImage(
-                student.photo.path,
-                15,
-                40,
-                width=50,
-                height=50,
-            )
-
-        pdf.showPage()
+        pdf.setPageSize(ID_CARD_SIZE)
+        draw_student_id_card(
+            pdf,
+            student,
+            id_card_settings,
+        )
 
     pdf.save()
     buffer.seek(0)

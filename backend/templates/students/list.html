@@ -43,6 +43,11 @@ Students
                     Generate ID Cards
                 </button>
 
+                <button form="regenerate-missing-qr-form" type="submit"
+                    class="bg-slate-700 hover:bg-slate-800 text-white px-5 py-3 rounded-lg">
+                    Regenerate Missing QRs
+                </button>
+
             </div>
 
         </div>
@@ -50,6 +55,11 @@ Students
     </div>
 
     <!-- Search -->
+
+    <form id="regenerate-missing-qr-form" method="POST" action="{% url 'students:regenerate_missing_qr_codes' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    </form>
 
     <div class="bg-white rounded-xl shadow p-5 mb-6">
 
@@ -70,6 +80,7 @@ Students
     <form id="bulk-form" method="POST" action="{% url 'students:bulk_qr_download' %}">
 
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
 
         <div class="bg-white rounded-xl shadow overflow-hidden">
 
@@ -212,6 +223,11 @@ Students
                                         class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm">
                                         Delete
                                     </a>
+
+                                    <button type="submit" formaction="{% url 'students:regenerate_student_qr' student.id %}"
+                                        class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded text-sm">
+                                        QR
+                                    </button>
 
                                 </div>
 

@@ -12,9 +12,18 @@ Students
             <p class="text-sm font-semibold uppercase text-emerald-700">Students</p>
             <h1 class="mt-2 text-3xl font-bold text-slate-950">Assign Students To Classes</h1>
         </div>
-        <a href="{% url 'students:create_student' %}" class="inline-flex justify-center rounded-lg bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900">
-            Add Student
-        </a>
+        <div class="flex flex-wrap gap-2">
+            <form method="POST" action="{% url 'students:regenerate_missing_qr_codes' %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="rounded-lg border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-900 hover:bg-slate-50">
+                    Regenerate Missing QRs
+                </button>
+            </form>
+            <a href="{% url 'students:create_student' %}" class="inline-flex justify-center rounded-lg bg-emerald-800 px-5 py-3 font-semibold text-white hover:bg-emerald-900">
+                Add Student
+            </a>
+        </div>
     </div>
 
     <form method="GET" class="mt-8 grid gap-3 rounded-lg bg-white border border-slate-200 p-4 sm:grid-cols-[1fr_220px_auto]">
@@ -78,6 +87,13 @@ Students
                                 <a href="{% url 'students:delete_student' student.id %}" class="font-semibold text-red-700 hover:text-red-900">
                                     Delete
                                 </a>
+                                <form method="POST" action="{% url 'students:regenerate_student_qr' student.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit" class="font-semibold text-purple-700 hover:text-purple-900">
+                                        Regenerate QR
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>

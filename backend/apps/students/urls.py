@@ -11,6 +11,8 @@ from .views import (
     edit_student,
     import_students,
     parent_portal,
+    regenerate_missing_qr_codes,
+    regenerate_student_qr,
     student_detail,
     student_id_card,
     student_list,
@@ -46,6 +48,16 @@ urlpatterns = [
         "<int:pk>/delete/",
         delete_student,
         name="delete_student",
+    ),
+    path(
+        "<int:pk>/regenerate-qr/",
+        regenerate_student_qr,
+        name="regenerate_student_qr",
+    ),
+    path(
+        "regenerate-missing-qr/",
+        regenerate_missing_qr_codes,
+        name="regenerate_missing_qr_codes",
     ),
     path(
         "<int:pk>/id-card/",
