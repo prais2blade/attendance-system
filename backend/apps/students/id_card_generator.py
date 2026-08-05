@@ -2,6 +2,7 @@ import hashlib
 import random
 from datetime import date
 
+from django.conf import settings
 from django.utils import timezone
 from PIL import Image, ImageOps
 from reportlab.lib import colors
@@ -33,6 +34,10 @@ WHITE = colors.white
 MUTED = colors.HexColor("#E7DAF6")
 GREEN = colors.HexColor("#2E9D78")
 SLATE = colors.HexColor("#657083")
+
+DEFAULT_CODECAMP_LOGO_PATH = (
+    settings.BASE_DIR / "static" / "images" / "codecamp-logo.png"
+)
 
 
 def get_id_card_settings():
@@ -191,22 +196,25 @@ def _draw_wave(pdf, y, height, stroke_color, fill_color, line_width):
 
 
 def _draw_brand(pdf, organization_name, system_settings):
-    logo_path = get_existing_file_path(system_settings.logo) if system_settings else None
+    logo_path, use_default_logo = _brand_logo_path(system_settings)
     logo_x = CARD_X + 11
     logo_y = CARD_Y + CARD_H - 31
     logo_size = 22
 
     if logo_path:
-        pdf.setFillColor(colors.Color(1, 1, 1, alpha=0.88))
-        pdf.roundRect(logo_x, logo_y, logo_size, logo_size, 5, fill=1, stroke=0)
-        _draw_image_fit(
-            pdf,
-            logo_path,
-            logo_x + 2,
-            logo_y + 2,
-            logo_size - 4,
-            logo_size - 4,
-        )
+        if use_default_logo:
+            _draw_default_codecamp_logo(pdf, logo_path, logo_x, logo_y, logo_size)
+        else:
+            pdf.setFillColor(colors.Color(1, 1, 1, alpha=0.88))
+            pdf.roundRect(logo_x, logo_y, logo_size, logo_size, 5, fill=1, stroke=0)
+            _draw_image_fit(
+                pdf,
+                logo_path,
+                logo_x + 2,
+                logo_y + 2,
+                logo_size - 4,
+                logo_size - 4,
+            )
     else:
         _draw_fallback_logo(pdf, logo_x, logo_y, logo_size)
 
@@ -228,6 +236,58 @@ def _draw_brand(pdf, organization_name, system_settings):
     pdf.setFillColor(MUTED)
     pdf.setFont("Helvetica", 6.6)
     pdf.drawString(text_x, text_y - 10, "STUDENT IDENTIFICATION CARD")
+
+
+def _brand_logo_path(system_settings):
+    uploaded_logo_path = (
+        get_existing_file_path(system_settings.logo) if system_settings else None
+    )
+
+    if uploaded_logo_path:
+        return uploaded_logo_path, False
+
+    if DEFAULT_CODECAMP_LOGO_PATH.exists():
+        return str(DEFAULT_CODECAMP_LOGO_PATH), True
+
+    return None, False
+
+
+def _draw_default_codecamp_logo(pdf, image_path, x, y, size):
+    image = _codecamp_mark_reader(image_path)
+
+    if not image:
+        _draw_fallback_logo(pdf, x, y, size)
+        return
+
+    pdf.setFillColor(colors.Color(0.38, 0.14, 0.72, alpha=0.22))
+    pdf.circle(x + (size / 2), y + (size / 2), size * 0.62, fill=1, stroke=0)
+    pdf.drawImage(
+        image,
+        x - 1,
+        y - 1,
+        width=size + 2,
+        height=size + 2,
+        preserveAspectRatio=True,
+        anchor="c",
+        mask="auto",
+    )
+
+
+def _codecamp_mark_reader(image_path):
+    try:
+        with Image.open(image_path) as image:
+            image = ImageOps.exif_transpose(image).convert("RGB")
+            width, height = image.size
+            crop_box = (
+                int(width * 0.23),
+                int(height * 0.04),
+                int(width * 0.77),
+                int(height * 0.58),
+            )
+            image = image.crop(crop_box)
+            return ImageReader(image.copy())
+    except (OSError, ValueError):
+        return None
 
 
 def _draw_fallback_logo(pdf, x, y, size):
