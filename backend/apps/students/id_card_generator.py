@@ -318,23 +318,38 @@ def _draw_initials_placeholder(pdf, student, cx, cy, radius):
 
 def _draw_student_details(pdf, student):
     x = CARD_X + 84
-    y = CARD_Y + 80
-    max_width = 89
+    y = CARD_Y + 82
+    qr_x, _, _, _ = _qr_box_geometry()
+    max_width = qr_x - x - 7
     full_name = student.full_name.upper().strip()
-    lines = _wrap_text(full_name, "Helvetica-Bold", 15.4, max_width, max_lines=2)
+    lines, font_size = _fit_wrapped_text(
+        full_name,
+        "Helvetica-Bold",
+        max_width,
+        max_lines=5,
+        max_size=14.5,
+        min_size=6.2,
+    )
 
     pdf.setFillColor(WHITE)
-    font_size = 15.4 if len(lines) == 1 else 14
-    line_gap = 15.5 if len(lines) == 1 else 14
+    line_gap = max(font_size * 0.96, 6.7)
     pdf.setFont("Helvetica-Bold", font_size)
 
     for index, line in enumerate(lines):
         pdf.drawString(x, y - (index * line_gap), line)
 
-    after_name_y = y - (len(lines) * line_gap) - 1
+    after_name_y = y - (len(lines) * line_gap) - 2
     pdf.setFillColor(MUTED)
-    pdf.setFont("Helvetica-Bold", 7.9)
-    pdf.drawString(x, after_name_y, _student_class_label(student).upper())
+    _draw_fit_text(
+        pdf,
+        _student_class_label(student).upper(),
+        x,
+        after_name_y,
+        max_width,
+        "Helvetica-Bold",
+        7.9,
+        5.8,
+    )
 
     pdf.setFillColor(WHITE)
     pdf.setFont("Helvetica-Bold", 8.2)
@@ -366,9 +381,7 @@ def _student_class_label(student):
 def _draw_qr_code(pdf, student):
     ensure_student_qr_code(student)
     qr_code_path = get_existing_file_path(student.qr_code)
-    box_size = 51
-    box_x = CARD_X + CARD_W - box_size - 13
-    box_y = CARD_Y + 46
+    box_x, box_y, box_size, _ = _qr_box_geometry()
 
     pdf.setFillColor(colors.Color(1, 1, 1, alpha=0.96))
     pdf.roundRect(box_x, box_y, box_size, box_size, 4, fill=1, stroke=0)
@@ -394,13 +407,20 @@ def _draw_qr_code(pdf, student):
 
 def _draw_status(pdf, student):
     valid_until = _valid_until()
-    box_size = 51
-    box_x = CARD_X + CARD_W - box_size - 13
+    box_x, _, box_size, _ = _qr_box_geometry()
     y = CARD_Y + 19
 
     pdf.setFillColor(WHITE)
-    pdf.setFont("Helvetica-Bold", 6.7)
-    pdf.drawCentredString(box_x + (box_size / 2), y + 20, f"VALID UNTIL: {valid_until}")
+    _draw_fit_centered_text(
+        pdf,
+        f"VALID UNTIL: {valid_until}",
+        box_x + (box_size / 2),
+        y + 20,
+        64,
+        "Helvetica-Bold",
+        6.7,
+        4.8,
+    )
 
     active = getattr(student, "is_active", True)
     badge_color = GREEN if active else SLATE
@@ -415,6 +435,14 @@ def _draw_status(pdf, student):
     pdf.setFillColor(WHITE)
     pdf.setFont("Helvetica-Bold", 8.5)
     pdf.drawCentredString(badge_x + (badge_w / 2), badge_y + 3.4, badge_text)
+
+
+def _qr_box_geometry():
+    box_size = 51
+    box_x = CARD_X + CARD_W - box_size - 13
+    box_y = CARD_Y + 46
+
+    return box_x, box_y, box_size, box_size
 
 
 def _valid_until():
@@ -469,46 +497,102 @@ def _draw_fit_text(pdf, text, x, y, max_width, font_name, max_size, min_size):
     pdf.drawString(x, y, text)
 
 
-def _wrap_text(text, font_name, font_size, max_width, max_lines):
+def _draw_fit_centered_text(
+    pdf,
+    text,
+    center_x,
+    y,
+    max_width,
+    font_name,
+    max_size,
+    min_size,
+):
+    size = max_size
+
+    while size > min_size and pdfmetrics.stringWidth(text, font_name, size) > max_width:
+        size -= 0.5
+
+    pdf.setFont(font_name, size)
+    pdf.drawCentredString(center_x, y, text)
+
+
+def _fit_wrapped_text(text, font_name, max_width, max_lines, max_size, min_size):
+    size = max_size
+
+    while size >= min_size:
+        lines = _wrap_text(
+            text,
+            font_name,
+            size,
+            max_width,
+            split_long_words=False,
+        )
+
+        if len(lines) <= max_lines and _lines_fit(lines, font_name, size, max_width):
+            return lines, size
+
+        size -= 0.5
+
+    return _wrap_text(text, font_name, min_size, max_width), min_size
+
+
+def _wrap_text(text, font_name, font_size, max_width, split_long_words=True):
     words = text.split()
     lines = []
     current = ""
 
     for word in words:
-        candidate = f"{current} {word}".strip()
+        word_parts = (
+            _split_word_to_width(word, font_name, font_size, max_width)
+            if split_long_words
+            else [word]
+        )
+
+        for part in word_parts:
+            candidate = f"{current} {part}".strip()
+
+            if pdfmetrics.stringWidth(candidate, font_name, font_size) <= max_width:
+                current = candidate
+                continue
+
+            if current:
+                lines.append(current)
+
+            current = part
+
+    if current:
+        lines.append(current)
+
+    return lines or [text]
+
+
+def _lines_fit(lines, font_name, font_size, max_width):
+    return all(
+        pdfmetrics.stringWidth(line, font_name, font_size) <= max_width
+        for line in lines
+    )
+
+
+def _split_word_to_width(word, font_name, font_size, max_width):
+    if pdfmetrics.stringWidth(word, font_name, font_size) <= max_width:
+        return [word]
+
+    parts = []
+    current = ""
+
+    for char in word:
+        candidate = f"{current}{char}"
 
         if pdfmetrics.stringWidth(candidate, font_name, font_size) <= max_width:
             current = candidate
             continue
 
         if current:
-            lines.append(current)
+            parts.append(current)
 
-        current = word
+        current = char
 
-        if len(lines) == max_lines:
-            break
+    if current:
+        parts.append(current)
 
-    if current and len(lines) < max_lines:
-        lines.append(current)
-
-    if not lines:
-        return [text]
-
-    if len(lines) == max_lines and " ".join(lines) != text:
-        lines[-1] = _ellipsize(lines[-1], font_name, font_size, max_width)
-
-    return lines
-
-
-def _ellipsize(text, font_name, font_size, max_width):
-    ellipsis = "..."
-    available = max_width - pdfmetrics.stringWidth(ellipsis, font_name, font_size)
-
-    if available <= 0:
-        return ellipsis
-
-    while text and pdfmetrics.stringWidth(text, font_name, font_size) > available:
-        text = text[:-1]
-
-    return f"{text.rstrip()}{ellipsis}"
+    return parts
