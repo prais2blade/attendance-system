@@ -13,6 +13,16 @@ Students
             <h1 class="mt-2 text-3xl font-bold text-slate-950">Assign Students To Classes</h1>
         </div>
         <div class="flex flex-wrap gap-2">
+            <form id="bulk-id-card-form" method="POST" action="{% url 'students:bulk_id_cards' %}">
+                {% csrf_token %}
+            </form>
+            <button
+                type="submit"
+                form="bulk-id-card-form"
+                class="inline-flex justify-center rounded-lg bg-purple-700 px-5 py-3 font-semibold text-white hover:bg-purple-800"
+            >
+                Download Selected ID Cards
+            </button>
             <form method="POST" action="{% url 'students:regenerate_missing_qr_codes' %}">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
@@ -50,6 +60,15 @@ Students
             <table class="w-full text-sm">
                 <thead class="bg-slate-50 text-slate-600">
                     <tr>
+                        <th class="p-4 text-left">
+                            <input
+                                type="checkbox"
+                                id="select-all-students"
+                                class="h-4 w-4 rounded border-slate-300 text-purple-700 focus:ring-purple-600"
+                                title="Select all students"
+                                aria-label="Select all students"
+                            >
+                        </th>
                         <th class="p-4 text-left">Student</th>
                         <th class="p-4 text-left">Student ID</th>
                         <th class="p-4 text-left">Class</th>
@@ -60,6 +79,16 @@ Students
                 <tbody class="divide-y divide-slate-100">
                     {% for student in students %}
                     <tr>
+                        <td class="p-4">
+                            <input
+                                type="checkbox"
+                                name="students"
+                                value="{{ student.id }}"
+                                form="bulk-id-card-form"
+                                class="student-checkbox h-4 w-4 rounded border-slate-300 text-purple-700 focus:ring-purple-600"
+                                aria-label="Select {{ student.full_name }}"
+                            >
+                        </td>
                         <td class="p-4 font-semibold">{{ student.full_name }}</td>
                         <td class="p-4">{{ student.student_id }}</td>
                         <td class="p-4">
@@ -99,7 +128,7 @@ Students
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="p-6 text-center text-slate-500">No students found.</td>
+                        <td colspan="6" class="p-6 text-center text-slate-500">No students found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -107,5 +136,19 @@ Students
         </div>
     </div>
 </section>
+
+<script>
+    const selectAllStudents = document.getElementById("select-all-students");
+
+    if (selectAllStudents) {
+        selectAllStudents.addEventListener("change", function () {
+            document
+                .querySelectorAll(".student-checkbox")
+                .forEach(function (checkbox) {
+                    checkbox.checked = selectAllStudents.checked;
+                });
+        });
+    }
+</script>
 
 {% endblock %}
