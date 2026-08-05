@@ -6,7 +6,7 @@ from django.conf import settings
 from django.utils import timezone
 from PIL import Image, ImageOps
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
@@ -17,11 +17,11 @@ from .qr_utils import ensure_student_qr_code, get_existing_file_path
 
 
 ID_CARD_SIZE = (
-    105 * mm,
-    99 * mm,
+    98.5 * mm,
+    67 * mm,
 )
-BULK_ID_CARD_PAGE_SIZE = A4
-BULK_ID_CARD_COLUMNS = 2
+BULK_ID_CARD_PAGE_SIZE = landscape(A4)
+BULK_ID_CARD_COLUMNS = 3
 BULK_ID_CARD_ROWS = 3
 ID_CARDS_PER_BULK_PAGE = BULK_ID_CARD_COLUMNS * BULK_ID_CARD_ROWS
 
@@ -63,7 +63,7 @@ def draw_student_id_card(
     height=None,
 ):
     """
-    Draw one premium student ID card in a 105mm x 99mm landscape print slot.
+    Draw one premium student ID card in a CR100 98.5mm x 67mm landscape slot.
     """
 
     system_settings = system_settings or get_id_card_settings()
@@ -239,8 +239,8 @@ def _draw_wave(pdf, y, height, stroke_color, fill_color, line_width):
 def _draw_brand(pdf, organization_name, system_settings):
     logo_path, use_default_logo = _brand_logo_path(system_settings)
     logo_x = CARD_X + 13
-    logo_y = CARD_Y + CARD_H - 39
-    logo_size = 28
+    logo_y = CARD_Y + CARD_H - 35
+    logo_size = 27
 
     if logo_path:
         if use_default_logo:
@@ -260,7 +260,7 @@ def _draw_brand(pdf, organization_name, system_settings):
         _draw_fallback_logo(pdf, logo_x, logo_y, logo_size)
 
     text_x = logo_x + logo_size + 8
-    text_y = logo_y + 18
+    text_y = logo_y + 17
 
     pdf.setFillColor(WHITE)
     _draw_fit_text(
@@ -270,7 +270,7 @@ def _draw_brand(pdf, organization_name, system_settings):
         text_y,
         CARD_X + CARD_W - text_x - 15,
         "Helvetica-Bold",
-        13.5,
+        13,
         7.5,
     )
 
@@ -348,9 +348,9 @@ def _draw_fallback_logo(pdf, x, y, size):
 
 
 def _draw_photo(pdf, student):
-    cx = CARD_X + CARD_W * 0.29
-    cy = CARD_Y + CARD_H * 0.56
-    radius = 43
+    cx = CARD_X + CARD_W * 0.25
+    cy = CARD_Y + CARD_H * 0.50
+    radius = 39
     photo_path = get_existing_file_path(student.photo)
 
     pdf.setFillColor(colors.Color(1, 1, 1, alpha=0.23))
@@ -418,16 +418,17 @@ def _draw_initials_placeholder(pdf, student, cx, cy, radius):
 
 
 def _draw_student_details(pdf, student):
-    x = CARD_X + CARD_W * 0.52
-    y = CARD_Y + CARD_H * 0.70
-    max_width = CARD_X + CARD_W - x - 16
+    x = CARD_X + CARD_W * 0.43
+    y = CARD_Y + CARD_H * 0.63
+    qr_x, _, _, _ = _qr_box_geometry()
+    max_width = qr_x - x - 8
     full_name = student.full_name.upper().strip()
     lines, font_size = _fit_wrapped_text(
         full_name,
         "Helvetica-Bold",
         max_width,
         max_lines=5,
-        max_size=14.2,
+        max_size=13.8,
         min_size=5.8,
     )
 
@@ -508,39 +509,39 @@ def _draw_qr_code(pdf, student):
 def _draw_status(pdf, student):
     valid_until = _valid_until()
     box_x, _, box_size, _ = _qr_box_geometry()
-    y = CARD_Y + 23
+    y = CARD_Y + 35
 
     pdf.setFillColor(WHITE)
     _draw_fit_centered_text(
         pdf,
         f"VALID UNTIL: {valid_until}",
         box_x + (box_size / 2),
-        y + 22,
-        78,
+        y + 18,
+        70,
         "Helvetica-Bold",
-        7,
+        6.4,
         4.8,
     )
 
     active = getattr(student, "is_active", True)
     badge_color = GREEN if active else SLATE
     badge_text = "ACTIVE" if active else "INACTIVE"
-    badge_w = 58
-    badge_h = 15
+    badge_w = 52
+    badge_h = 13
     badge_x = box_x + ((box_size - badge_w) / 2)
     badge_y = y
 
     pdf.setFillColor(badge_color)
     pdf.roundRect(badge_x, badge_y, badge_w, badge_h, 4, fill=1, stroke=0)
     pdf.setFillColor(WHITE)
-    pdf.setFont("Helvetica-Bold", 9)
-    pdf.drawCentredString(badge_x + (badge_w / 2), badge_y + 4, badge_text)
+    pdf.setFont("Helvetica-Bold", 8.4)
+    pdf.drawCentredString(badge_x + (badge_w / 2), badge_y + 3.4, badge_text)
 
 
 def _qr_box_geometry():
-    box_size = 64
-    box_x = CARD_X + CARD_W - box_size - 17
-    box_y = CARD_Y + 57
+    box_size = 58
+    box_x = CARD_X + CARD_W - box_size - 15
+    box_y = CARD_Y + 75
 
     return box_x, box_y, box_size, box_size
 
