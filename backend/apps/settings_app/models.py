@@ -48,17 +48,15 @@ class SystemSettings(models.Model):
     def __str__(self):
 
         return "System Settings"
-    
 
-def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):
 
-    self.pk = 1
+        self.pk = 1
 
-    super().save(*args, **kwargs)
-    
-    
-class Meta:
+        super().save(*args, **kwargs)
 
-    verbose_name = "System Settings"
+    class Meta:
 
-    verbose_name_plural = "System Settings"
+        verbose_name = "System Settings"
+
+        verbose_name_plural = "System Settings"

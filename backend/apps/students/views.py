@@ -17,11 +17,13 @@ from reportlab.pdfgen import canvas
 
 from apps.attendance.models import Attendance
 
+from .admin_auth import admin_required
 from .forms import StudentForm, StudentImportForm
 from .models import Student, StudentParent
 from .services import RegistrationIntegrationService
 
 
+@admin_required
 def student_detail(request, pk):
     student = get_object_or_404(
         Student,
@@ -42,6 +44,7 @@ def student_detail(request, pk):
     )
 
 
+@admin_required
 def student_id_card(request, pk):
     student = get_object_or_404(
         Student,
@@ -121,6 +124,7 @@ def parent_portal(request, token):
     )
 
 
+@admin_required
 def import_students(request):
     form = StudentImportForm()
 
@@ -214,6 +218,7 @@ def import_students(request):
     )
 
 
+@admin_required
 def create_student(request):
     form = StudentForm()
 
@@ -224,12 +229,19 @@ def create_student(request):
         )
 
         if form.is_valid():
+            teaching_class = form.cleaned_data.get("teaching_class")
+
             payload = {
                 "first_name": form.cleaned_data["first_name"],
                 "last_name": form.cleaned_data.get("last_name", ""),
                 "date_of_birth": form.cleaned_data.get("date_of_birth"),
                 "gender": form.cleaned_data.get("gender", ""),
-                "class_name": form.cleaned_data["class_name"],
+                "class_name": (
+                    teaching_class.name
+                    if teaching_class
+                    else form.cleaned_data["class_name"]
+                ),
+                "teaching_class": teaching_class,
                 "parent_title": form.cleaned_data.get("parent_title", ""),
                 "parent_name": form.cleaned_data.get("parent_name", ""),
                 "parent_email": form.cleaned_data.get("parent_email", ""),
@@ -279,6 +291,7 @@ def create_student(request):
     )
 
 
+@admin_required
 def edit_student(request, pk):
     student = get_object_or_404(
         Student,
@@ -371,6 +384,7 @@ def edit_student(request, pk):
     )
 
 
+@admin_required
 def delete_student(request, pk):
     student = get_object_or_404(
         Student,
@@ -400,6 +414,7 @@ def delete_student(request, pk):
     )
 
 
+@admin_required
 def bulk_qr_download(request):
     if request.method != "POST":
         return redirect("students:student_list")
@@ -443,6 +458,7 @@ def bulk_qr_download(request):
     return response
 
 
+@admin_required
 def bulk_id_cards(request):
     if request.method != "POST":
         return redirect("students:student_list")
@@ -504,6 +520,7 @@ def bulk_id_cards(request):
     )
 
 
+@admin_required
 def download_student_template(request):
     file_path = os.path.join(
         settings.BASE_DIR,
@@ -519,6 +536,7 @@ def download_student_template(request):
     )
 
 
+@admin_required
 def download_student_template(request):
     workbook = Workbook()
     sheet = workbook.active
@@ -624,6 +642,7 @@ def download_student_template(request):
     return response
 
 
+@admin_required
 def student_list(request):
     search = request.GET.get("search", "").strip()
 

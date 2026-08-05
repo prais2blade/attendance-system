@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 import json
 import qrcode
 from io import BytesIO
@@ -46,17 +47,25 @@ class Student(models.Model):
         blank=True,
         null=True
     )
-    
+
     gender = models.CharField(
         max_length=10,
         blank=True,
     )
-    
+
     class_name = models.CharField(
         max_length=100,
         blank=True,
     )
-    
+
+    teaching_class = models.ForeignKey(
+        "TeachingClass",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="students",
+    )
+
     parent_name = models.CharField(
         max_length=200,
         blank=True,
@@ -73,13 +82,13 @@ class Student(models.Model):
         blank=True,
         null=True
     )
-    
+
     portal_token = models.CharField(
         max_length=50,
         blank=True,
         null=True
     )
-   
+
     is_active = models.BooleanField(
         default=True
     )
@@ -87,7 +96,7 @@ class Student(models.Model):
     created_at = models.DateTimeField(
         auto_now_add=True
     )
-    
+
     def generate_qr_code(self):
 
         qr_data = {
@@ -120,14 +129,14 @@ class Student(models.Model):
             File(buffer),
             save=False
         )
-    
+
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
-    
+
     def save(self, *args, **kwargs):
 
         is_new = self.pk is None
-        
+
         if not self.portal_token:
             self.portal_token = secrets.token_urlsafe(16)
 
@@ -146,7 +155,6 @@ class Student(models.Model):
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
-    
 
 class Parent(models.Model):
     title = models.CharField(
@@ -292,6 +300,14 @@ class StudentParent(models.Model):
         max_length=50,
         default="Guardian"
     )
+    
+    teaching_class = models.ForeignKey(
+        "TeachingClass",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="student_parent_links",
+    )
 
     def __str__(self):
 
@@ -336,6 +352,14 @@ class Announcement(models.Model):
         blank=True,
     )
 
+    teaching_class = models.ForeignKey(
+        "TeachingClass",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="announcements",
+    )
+
     attachment = models.FileField(
         upload_to="announcements/",
         blank=True,
@@ -371,6 +395,179 @@ class Announcement(models.Model):
     class Meta:
         ordering = [
             "-publish_at",
+        ]
+
+    def __str__(self):
+        return self.title
+    
+class Tutor(models.Model):
+    """
+    Tutors responsible for teaching one or
+    more classes.
+    """
+
+    first_name = models.CharField(
+        max_length=100,
+    )
+
+    last_name = models.CharField(
+        max_length=100,
+    )
+
+    email = models.EmailField(
+        unique=True,
+    )
+
+    phone_number = models.CharField(
+        max_length=20,
+        unique=True,
+    )
+
+    password = models.CharField(
+        max_length=255,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "first_name",
+            "last_name",
+        ]
+
+    @property
+    def full_name(self):
+        return (
+            f"{self.first_name} "
+            f"{self.last_name}"
+        )
+
+    def set_password(self, raw_password):
+        self.password = make_password(
+            raw_password
+        )
+
+    def check_password(self, raw_password):
+        return check_password(
+            raw_password,
+            self.password,
+        )
+
+    def __str__(self):
+        return self.full_name
+    
+
+class TeachingClass(models.Model):
+    """
+    Operational teaching class.
+
+    Used by Attendance,
+    Parent Portal and Tutor Dashboard.
+    """
+
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+    )
+
+    description = models.TextField(
+        blank=True,
+    )
+
+    tutor = models.ForeignKey(
+        Tutor,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="classes",
+    )
+
+    staff = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="teaching_classes",
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "name",
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class Assignment(models.Model):
+    title = models.CharField(
+        max_length=200,
+    )
+
+    description = models.TextField()
+
+    teaching_class = models.ForeignKey(
+        TeachingClass,
+        on_delete=models.CASCADE,
+        related_name="assignments",
+    )
+
+    due_date = models.DateField(
+        null=True,
+        blank=True,
+    )
+
+    attachment = models.FileField(
+        upload_to="assignments/",
+        null=True,
+        blank=True,
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assignments",
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-created_at",
         ]
 
     def __str__(self):

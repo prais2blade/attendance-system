@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
 from apps import attendance
+from apps.students.admin_auth import admin_required
 from apps.students.models import Student
 from config import settings
 from .models import Attendance
@@ -38,6 +39,7 @@ from apps.notifications.attendance_notifications import (
 
 
 @method_decorator(csrf_exempt, name="dispatch")
+@method_decorator(admin_required, name="dispatch")
 class QRScanView(View):
 
     def post(self, request):
@@ -66,6 +68,12 @@ class QRScanView(View):
             )
 
             now = timezone.now()
+            settings_obj = SystemSettings.objects.first()
+            auto_whatsapp_popup = (
+                settings_obj.auto_whatsapp_popup
+                if settings_obj
+                else False
+            )
 
             if attendance.check_in is None:
 
@@ -93,7 +101,7 @@ class QRScanView(View):
                             student
                         ),
                     "auto_whatsapp_popup":
-                        SystemSettings.objects.first().auto_whatsapp_popup
+                        auto_whatsapp_popup
 
                 })
 
@@ -122,7 +130,7 @@ class QRScanView(View):
                             student
                         ),
                     "auto_whatsapp_popup":
-                        SystemSettings.objects.first().auto_whatsapp_popup
+                        auto_whatsapp_popup
 
                 })
 
@@ -138,6 +146,7 @@ class QRScanView(View):
             
             
 
+@admin_required
 def scanner_view(request):
 
     return render(
@@ -146,6 +155,7 @@ def scanner_view(request):
     )
     
 
+@admin_required
 def dashboard_view(request):
 
     today = timezone.localdate()
@@ -262,6 +272,7 @@ def dashboard_view(request):
         context
     )
     
+@admin_required
 def reports_dashboard(request):
 
     today = timezone.localdate()
@@ -315,6 +326,7 @@ def reports_dashboard(request):
         context
     )
     
+@admin_required
 def reports_dashboard(request):
 
     today = timezone.localdate()
@@ -431,6 +443,7 @@ def reports_dashboard(request):
         context
     )
     
+@admin_required
 def export_attendance_csv(request):
 
     response = HttpResponse(
@@ -483,6 +496,7 @@ def export_attendance_csv(request):
 
     return response
 
+@admin_required
 def export_attendance_excel(request):
 
     workbook = Workbook()
@@ -603,6 +617,7 @@ def get_report_date_range(request):
         report_type
     )
     
+@admin_required
 def export_attendance_pdf(request):
 
     start_date, end_date, _ = get_report_date_range(

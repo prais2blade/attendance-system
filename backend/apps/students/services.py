@@ -10,6 +10,7 @@ from apps.students.models import (
     Parent,
     Student,
     StudentParent,
+    TeachingClass,
 )
 
 
@@ -63,6 +64,8 @@ class RegistrationIntegrationService:
         }
         """
 
+        data = cls.normalize_payload(data)
+
         cls.validate_payload(data)
 
         parent, temporary_password, parent_created = cls.get_or_create_parent(data)
@@ -89,6 +92,18 @@ class RegistrationIntegrationService:
     # =====================================================
     # Validation
     # =====================================================
+
+    @classmethod
+    def normalize_payload(cls, data):
+        normalized = dict(data)
+
+        if not normalized.get("class_name") and normalized.get("batch"):
+            normalized["class_name"] = normalized["batch"]
+
+        if not normalized.get("relationship"):
+            normalized["relationship"] = "Guardian"
+
+        return normalized
 
     @classmethod
     def validate_payload(cls, data):
@@ -173,6 +188,17 @@ class RegistrationIntegrationService:
             class_name=data["class_name"],
             parent_name=parent.full_name,
         )
+
+        teaching_class = data.get("teaching_class")
+
+        if not teaching_class:
+            teaching_class = TeachingClass.objects.filter(
+                name__iexact=data["class_name"],
+                is_active=True,
+            ).first()
+
+        if teaching_class:
+            student.teaching_class = teaching_class
 
         if "date_of_birth" in data:
             student.date_of_birth = data.get("date_of_birth")
@@ -469,13 +495,13 @@ class ParentChildService:
             student=student,
         ).order_by(
             "-date",
-            "-check_in_time",
+            "-check_in",
         )
 
         total_days = attendance_history.count()
-        present_days = attendance_history.filter(status="Present").count()
-        absent_days = attendance_history.filter(status="Absent").count()
-        late_days = attendance_history.filter(status="Late").count()
+        present_days = attendance_history.filter(check_in__isnull=False).count()
+        absent_days = 0
+        late_days = 0
 
         attendance_rate = 0
 
@@ -634,7 +660,7 @@ class TimelineService:
                 student=relationship.student,
             ).order_by(
                 "-date",
-                "-check_in_time",
+                "-check_in",
             )[:20]
 
             for attendance in attendances:

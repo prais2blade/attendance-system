@@ -8,7 +8,10 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 
     # HTML pages
+    path("school-admin/", include("apps.students.admin_portal_urls")),
     path("students/", include("apps.students.urls")),
+    path("parent/", include("apps.students.parent_template_urls")),
+    path("staff/", include("apps.students.staff_urls")),
 
     # Attendance APIs
     path("api/attendance/", include("apps.attendance.urls")),

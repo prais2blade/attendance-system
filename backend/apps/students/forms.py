@@ -95,7 +95,7 @@ class StudentForm(forms.ModelForm):
             return
 
         relationship = (
-            self.instance.studentparent_set
+            self.instance.parents
             .select_related("parent")
             .first()
         )
@@ -193,6 +193,18 @@ class StudentForm(forms.ModelForm):
 
         return cleaned_data
 
+    def save(self, commit=True):
+        student = super().save(commit=False)
+
+        if student.teaching_class:
+            student.class_name = student.teaching_class.name
+
+        if commit:
+            student.save()
+            self.save_m2m()
+
+        return student
+
     class Meta:
 
         model = Student
@@ -205,6 +217,7 @@ class StudentForm(forms.ModelForm):
             "date_of_birth",
             "gender",
             "class_name",
+            "teaching_class",
 
         ]
 

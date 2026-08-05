@@ -71,45 +71,12 @@ class IntegrationAuthentication(BaseAuthentication):
     """
 
     def authenticate(self, request):
+        api_key = self.get_api_key(request)
 
-        api_key = request.headers.get(
-            "X-API-KEY"
-        )
-
-        if not api_key:
-
-            raise exceptions.AuthenticationFailed(
-                "Missing API Key."
-            )
-
-        if api_key != settings.ATTENDANCE_API_KEY:
-
-            raise exceptions.AuthenticationFailed(
-                "Invalid API Key."
-            )
-
-        class IntegrationUser:
-
-            is_authenticated = True
-
-            username = "codecamp"
-
-        return (
-            IntegrationUser(),
-            None,
-        )
-    def authenticate(self, request):
-
-        api_key = request.headers.get("X-API-KEY")
-
-        print("========== INTEGRATION AUTH ==========")
-        print("Received:", api_key)
-        print("Expected:", settings.ATTENDANCE_API_KEY)
-
-        if not api_key:
+        if api_key is None:
             raise exceptions.AuthenticationFailed("Missing API Key.")
 
-        if api_key != settings.ATTENDANCE_API_KEY:
+        if api_key not in self.valid_api_keys():
             raise exceptions.AuthenticationFailed("Invalid API Key.")
 
         class IntegrationUser:
@@ -117,6 +84,41 @@ class IntegrationAuthentication(BaseAuthentication):
             username = "codecamp"
 
         return (IntegrationUser(), None)
+
+    def get_api_key(self, request):
+        api_key = request.headers.get("X-API-KEY")
+
+        if api_key:
+            return api_key
+
+        authorization = request.headers.get("Authorization", "")
+
+        try:
+            auth_type, token = authorization.split()
+        except ValueError:
+            return None
+
+        if auth_type.lower() != "bearer":
+            return None
+
+        return token
+
+    def valid_api_keys(self):
+        ignored_values = {
+            "",
+            "CHANGE_THIS_TO_A_LONG_RANDOM_SECRET",
+        }
+
+        keys = {
+            settings.ATTENDANCE_API_KEY,
+            getattr(settings, "INTEGRATION_API_KEY", None),
+        }
+
+        return {
+            key
+            for key in keys
+            if key and key not in ignored_values
+        }
 
 
 # ==========================================================

@@ -33,5 +33,15 @@ class Attendance(models.Model):
             "date"
         )
 
+    @property
+    def status(self):
+        if self.check_out:
+            return "CHECKED OUT"
+
+        if self.check_in:
+            return "IN CENTER"
+
+        return "ABSENT"
+
     def __str__(self):
         return f"{self.student.student_id} - {self.date}"

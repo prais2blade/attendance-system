@@ -225,7 +225,15 @@ class RegisterStudentSerializer(serializers.Serializer):
         allow_blank=True,
     )
 
-    class_name = serializers.CharField()
+    class_name = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
+
+    batch = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
 
     parent_title = serializers.CharField(
         required=False,
@@ -251,7 +259,11 @@ class RegisterStudentSerializer(serializers.Serializer):
         allow_blank=True,
     )
 
-    relationship = serializers.CharField()
+    relationship = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="Guardian",
+    )
 
     photo = serializers.ImageField(
         required=False,
@@ -276,6 +288,29 @@ class RegisterStudentSerializer(serializers.Serializer):
         required=False,
         allow_blank=True,
     )
+
+    def validate(self, attrs):
+        class_name = (
+            attrs.get("class_name")
+            or attrs.get("batch")
+            or ""
+        ).strip()
+
+        if not class_name:
+            raise serializers.ValidationError(
+                {
+                    "class_name": (
+                        "This field is required when batch is not provided."
+                    )
+                }
+            )
+
+        attrs["class_name"] = class_name
+
+        if not attrs.get("relationship"):
+            attrs["relationship"] = "Guardian"
+
+        return attrs
 
 
 class ParentChangePasswordSerializer(serializers.Serializer):
